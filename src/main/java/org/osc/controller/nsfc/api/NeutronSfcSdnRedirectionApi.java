@@ -275,10 +275,10 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
                     return ipEntity;
                 });
             } catch (Exception e) {
-                LOG.warn("Failed to retrieve InspectionPort by id! Trying by ingress and egress");
+                LOG.warn("Failed to retrieve InspectionPort by id! Trying by ingress and egress " + inspectionPort);
             }
         } else {
-            LOG.warn("Failed to retrieve InspectionPort by id! Trying by ingress and egress");
+            LOG.warn("Failed to retrieve InspectionPort by id! Trying by ingress and egress " + inspectionPort);
         }
 
         NetworkElement ingress = inspectionPort.getIngressPort();
