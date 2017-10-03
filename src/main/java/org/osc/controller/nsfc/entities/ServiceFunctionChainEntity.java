@@ -29,10 +29,11 @@ import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.osc.sdk.controller.element.NetworkElement;
 
 @Entity
 @Table(name = "SERVICE_FUNCTION_CHAIN")
-public class ServiceFunctionChainEntity {
+public class ServiceFunctionChainEntity implements NetworkElement {
 
     @Id
     @GeneratedValue(generator = "uuid")
@@ -47,11 +48,12 @@ public class ServiceFunctionChainEntity {
     public ServiceFunctionChainEntity() {
     }
 
-    public ServiceFunctionChainEntity(String elementId, String parentId) {
+    public ServiceFunctionChainEntity(String elementId) {
         super();
         this.elementId = elementId;
     }
 
+    @Override
     public String getElementId() {
         return this.elementId;
     }
@@ -67,6 +69,21 @@ public class ServiceFunctionChainEntity {
     @Override
     public String toString() {
         return "ServiceFunctionChainEntity [elementId=" + this.elementId + ", portPairGroups=" + this.portPairGroups + "]";
+    }
+
+    @Override
+    public String getParentId() {
+        return null;
+    }
+
+    @Override
+    public List<String> getMacAddresses() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> getPortIPs() {
+        throw new UnsupportedOperationException();
     }
 
 }
