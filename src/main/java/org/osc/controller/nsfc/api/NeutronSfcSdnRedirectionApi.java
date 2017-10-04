@@ -46,44 +46,10 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     public NeutronSfcSdnRedirectionApi() {
     }
 
-    public NeutronSfcSdnRedirectionApi(TransactionControl txControl,
-            EntityManager em) {
+    public NeutronSfcSdnRedirectionApi(TransactionControl txControl, EntityManager em) {
         this.txControl = txControl;
         this.em = em;
         this.utils = new RedirectionApiUtils(em, txControl);
-    }
-
-    @Override
-    public String installInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort,
-            Long tag, TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
-            throws NetworkPortNotFoundException, Exception {
-
-        if (inspectedPort == null) {
-            throw new IllegalArgumentException("Attempt to install an Inspection Hook with no Inspected Port");
-        }
-        if (inspectionPort == null) {
-            throw new IllegalArgumentException("Attempt to install an Inspection Hook with null Inspection Port");
-        }
-
-        LOG.info(String.format("Installing Inspection Hook for (Inspected %s ; Inspection Port %s):", "" + inspectedPort,
-                                "" + inspectionPort));
-        LOG.info(String.format("Tag: %d; EncType: %s; Order: %d, Fail Policy: %s", tag, encType, order, failurePolicyType));
-
-        InspectionHookEntity retValEntity = this.txControl.required(() -> {
-            InspectionPortEntity dbInspectionPort =(InspectionPortEntity) getInspectionPort(inspectionPort);
-            this.utils.throwExceptionIfNullEntity(dbInspectionPort, inspectionPort);
-
-            InspectionHookEntity inspectionHookEntity = this.utils.findInspHookByInspectedAndPort(inspectedPort, dbInspectionPort);
-
-            if (inspectionHookEntity == null) {
-                inspectionHookEntity = this.utils.makeInspectionHookEntity(inspectedPort, dbInspectionPort, tag,
-                                                                           encType, order, failurePolicyType);
-            }
-
-            return this.em.merge(inspectionHookEntity);
-        });
-
-        return retValEntity.getHookId();
     }
 
     // Inspection port methods
@@ -159,57 +125,6 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public void setInspectionHookOrder(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long order)
-            throws Exception {
-        throw new UnsupportedOperationException("Hook order is not supported in neutron SFC.");
-    }
-
-    @Override
-    public Long getInspectionHookOrder(NetworkElement inspectedPort, InspectionPortElement inspectionPort)
-            throws Exception {
-        throw new UnsupportedOperationException("Hook order is not supported in neutron SFC.");
-    }
-
-    @Override
-    public void updateInspectionHook(InspectionHookElement existingInspectionHook) throws Exception {
-        if (existingInspectionHook == null) {
-            throw new IllegalArgumentException("Attempt to update a null Inspection Hook!");
-        }
-
-        NetworkElement inspected = existingInspectionHook.getInspectedPort();
-        InspectionPortElement inspectionPort = existingInspectionHook.getInspectionPort();
-
-        Long tag = existingInspectionHook.getTag();
-        Long order = existingInspectionHook.getOrder();
-        TagEncapsulationType encType = existingInspectionHook.getEncType();
-        FailurePolicyType failurePolicyType = existingInspectionHook.getFailurePolicyType();
-
-        installInspectionHook(inspected, inspectionPort, tag, encType, order, failurePolicyType);
-    }
-
-    @Override
-    public NetworkElement registerNetworkElement(List<NetworkElement> inspectedPorts) throws Exception {
-        return null;
-    }
-
-    @Override
-    public NetworkElement updateNetworkElement(NetworkElement portGroup, List<NetworkElement> inspectedPorts)
-            throws Exception {
-        // no-op
-        return null;
-    }
-
-    @Override
-    public void deleteNetworkElement(NetworkElement portGroupId) throws Exception {
-        // no-op
-    }
-
-    @Override
-    public List<NetworkElement> getNetworkElements(NetworkElement element) throws Exception {
-        return null;
-    }
-
-    @Override
     public void removeInspectionPort(InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
         if (inspectionPort == null) {
@@ -227,8 +142,62 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             NetworkElement egress = inspectionPort.getEgressPort();
 
             LOG.warn(String.format("Attempt to remove nonexistent Inspection Port for ingress %s and egress %s",
-                                   "" + ingress, "" + egress));
+                    "" + ingress, "" + egress));
         }
+    }
+
+    // Inspection Hooks methods
+
+    @Override
+    public String installInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
+            TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
+            throws NetworkPortNotFoundException, Exception {
+
+        if (inspectedPort == null) {
+            throw new IllegalArgumentException("Attempt to install an Inspection Hook with no Inspected Port");
+        }
+        if (inspectionPort == null) {
+            throw new IllegalArgumentException("Attempt to install an Inspection Hook with null Inspection Port");
+        }
+
+        LOG.info(String.format("Installing Inspection Hook for (Inspected %s ; Inspection Port %s):",
+                "" + inspectedPort, "" + inspectionPort));
+        LOG.info(String.format("Tag: %d; EncType: %s; Order: %d, Fail Policy: %s", tag, encType, order,
+                failurePolicyType));
+
+        InspectionHookEntity retValEntity = this.txControl.required(() -> {
+            InspectionPortEntity dbInspectionPort = (InspectionPortEntity) getInspectionPort(inspectionPort);
+            this.utils.throwExceptionIfNullEntity(dbInspectionPort, inspectionPort);
+
+            InspectionHookEntity inspectionHookEntity = this.utils.findInspHookByInspectedAndPort(inspectedPort,
+                    dbInspectionPort);
+
+            if (inspectionHookEntity == null) {
+                inspectionHookEntity = this.utils.makeInspectionHookEntity(inspectedPort, dbInspectionPort, tag,
+                        encType, order, failurePolicyType);
+            }
+
+            return this.em.merge(inspectionHookEntity);
+        });
+
+        return retValEntity.getHookId();
+    }
+
+    @Override
+    public void updateInspectionHook(InspectionHookElement existingInspectionHook) throws Exception {
+        if (existingInspectionHook == null) {
+            throw new IllegalArgumentException("Attempt to update a null Inspection Hook!");
+        }
+
+        NetworkElement inspected = existingInspectionHook.getInspectedPort();
+        InspectionPortElement inspectionPort = existingInspectionHook.getInspectionPort();
+
+        Long tag = existingInspectionHook.getTag();
+        Long order = existingInspectionHook.getOrder();
+        TagEncapsulationType encType = existingInspectionHook.getEncType();
+        FailurePolicyType failurePolicyType = existingInspectionHook.getFailurePolicyType();
+
+        installInspectionHook(inspected, inspectionPort, tag, encType, order, failurePolicyType);
     }
 
     @Override
@@ -253,8 +222,30 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         });
     }
 
-    // Unsupported operations in SFC
+    // SFC methods
+    @Override
+    public NetworkElement registerNetworkElement(List<NetworkElement> inspectedPorts) throws Exception {
+        return null;
+    }
 
+    @Override
+    public NetworkElement updateNetworkElement(NetworkElement portGroup, List<NetworkElement> inspectedPorts)
+            throws Exception {
+        // no-op
+        return null;
+    }
+
+    @Override
+    public void deleteNetworkElement(NetworkElement portGroupId) throws Exception {
+        // no-op
+    }
+
+    @Override
+    public List<NetworkElement> getNetworkElements(NetworkElement element) throws Exception {
+        return null;
+    }
+
+    // Unsupported operations in SFC
     @Override
     public InspectionHookElement getInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort)
             throws Exception {
@@ -264,8 +255,8 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public NetworkElement getNetworkElementByDeviceOwnerId(String deviceOwnerId) throws Exception {
-        throw new UnsupportedOperationException("Retrieving the network element given the device owner id is currently not supported.");
+    public void removeAllInspectionHooks(NetworkElement inspectedPort) throws Exception {
+        throw new UnsupportedOperationException("Removing all inspection hooks is not supported in neutron SFC.");
     }
 
     @Override
@@ -301,8 +292,21 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public void removeAllInspectionHooks(NetworkElement inspectedPort) throws Exception {
-        throw new UnsupportedOperationException("Removing all inspection hooks is not supported in neutron SFC.");
+    public void setInspectionHookOrder(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long order)
+            throws Exception {
+        throw new UnsupportedOperationException("Hook order is not supported in neutron SFC.");
+    }
+
+    @Override
+    public Long getInspectionHookOrder(NetworkElement inspectedPort, InspectionPortElement inspectionPort)
+            throws Exception {
+        throw new UnsupportedOperationException("Hook order is not supported in neutron SFC.");
+    }
+
+    @Override
+    public NetworkElement getNetworkElementByDeviceOwnerId(String deviceOwnerId) throws Exception {
+        throw new UnsupportedOperationException(
+                "Retrieving the network element given the device owner id is currently not supported.");
     }
 
     @Override

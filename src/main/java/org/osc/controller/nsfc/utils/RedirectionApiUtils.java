@@ -50,7 +50,7 @@ public class RedirectionApiUtils {
         this.txControl = txControl;
     }
 
-    public NetworkElementEntity makeNetworkElementEntity(NetworkElement networkElement) {
+    private NetworkElementEntity makeNetworkElementEntity(NetworkElement networkElement) {
         NetworkElementEntity retVal = new NetworkElementEntity();
 
         retVal.setElementId(networkElement.getElementId());
@@ -175,10 +175,6 @@ public class RedirectionApiUtils {
         return this.em.find(InspectionPortEntity.class, id);
     }
 
-    public NetworkElementEntity txNetworkElementEntityById(Long id) {
-        return this.em.find(NetworkElementEntity.class, id);
-    }
-
     public void removeSingleInspectionHook(String hookId) {
         if (hookId == null) {
             LOG.warn("Attempt to remove Inspection Hook with null id");
@@ -263,22 +259,6 @@ public class RedirectionApiUtils {
             LOG.error(String.format("Finding Inspection hooks by inspected %s and port %s", inspectedId, portId), e);
             return null;
         }
-    }
-
-    public List<InspectionHookEntity> txInspectionHookEntitiesByInspected(String inspectedId) {
-
-        CriteriaBuilder cb = this.em.getCriteriaBuilder();
-        CriteriaQuery<InspectionHookEntity> criteria = cb.createQuery(InspectionHookEntity.class);
-        Root<InspectionHookEntity> root = criteria.from(InspectionHookEntity.class);
-
-        criteria.select(root).where(cb.equal(root.join("inspectedPort").get("elementId"), inspectedId));
-
-        Query q= this.em.createQuery(criteria);
-
-        @SuppressWarnings("unchecked")
-        List<InspectionHookEntity> results = q.getResultList();
-
-        return results;
     }
 
     public void throwExceptionIfNullEntity(InspectionPortEntity inspectionPortTmp, InspectionPortElement inspectionPort)

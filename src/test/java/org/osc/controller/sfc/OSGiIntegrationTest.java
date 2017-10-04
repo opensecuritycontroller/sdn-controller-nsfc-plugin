@@ -267,14 +267,14 @@ public class OSGiIntegrationTest {
     }
 
     @Test
-    public void verifyCorrectNumberOfMacsAdPortIps() throws Exception {
+    public void testDb_PersistInspectionPort_verifyCorrectNumberOfMacsAdPortIps() throws Exception {
 
         assertEquals(null, this.inspectionPort.getElementId());
 
         this.txControl.required(() -> {
             this.em.persist(this.ppg);
-            this.em.persist(this.inspectionHook);
-            return this.inspectionHook;
+            this.em.persist(this.inspectionPort);
+            return null;
         });
 
         assertNotNull(this.inspectionPort.getElementId());
@@ -290,7 +290,7 @@ public class OSGiIntegrationTest {
     }
 
     @Test
-    public void verifyHookAndPortPersistedAfterSingleHookPersistenceWithObjectGraphSetUp() {
+    public void testDb_PersistHook_verifyHookAndPortPersisted() {
 
         this.txControl.required(() -> {
             this.em.persist(this.ppg);
