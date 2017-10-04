@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 import org.osc.controller.nsfc.entities.InspectionHookEntity;
 import org.osc.controller.nsfc.entities.InspectionPortEntity;
 import org.osc.controller.nsfc.entities.PortPairGroupEntity;
+import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
 import org.osc.controller.nsfc.utils.RedirectionApiUtils;
 import org.osc.sdk.controller.FailurePolicyType;
 import org.osc.sdk.controller.TagEncapsulationType;
@@ -78,7 +79,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         NetworkElement ingress = inspectionPort.getIngressPort();
         NetworkElement egress = inspectionPort.getEgressPort();
 
-        InspectionPortEntity ipEntity = this.utils.findInspPortByNetworkElements(ingress, egress);
+        InspectionPortEntity ipEntity = this.utils.findInspectionPortByNetworkElements(ingress, egress);
         return ipEntity;
     }
 
@@ -106,7 +107,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
             NetworkElement ingress = inspectionPort.getIngressPort();
             NetworkElement egress = inspectionPort.getEgressPort();
-            InspectionPortEntity inspectionPortEntity = this.utils.findInspPortByNetworkElements(ingress, egress);
+            InspectionPortEntity inspectionPortEntity = this.utils.findInspectionPortByNetworkElements(ingress, egress);
 
             if (inspectionPortEntity == null) {
                 inspectionPortEntity = this.utils.makeInspectionPortEntity(inspectionPort);
@@ -165,19 +166,21 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
         LOG.info(String.format("Installing Inspection Hook for (Inspected %s ; Inspection Port %s):",
                 "" + inspectedPort, "" + inspectionPort));
-        LOG.info(String.format("Tag: %d; EncType: %s; Order: %d, Fail Policy: %s", tag, encType, order,
-                failurePolicyType));
 
         InspectionHookEntity retValEntity = this.txControl.required(() -> {
-            InspectionPortEntity dbInspectionPort = (InspectionPortEntity) getInspectionPort(inspectionPort);
-            this.utils.throwExceptionIfNullEntity(dbInspectionPort, inspectionPort);
+            ServiceFunctionChainEntity sfc = this.utils.findBySfcId(inspectionPort.getElementId());
+            this.utils.throwExceptionIfNullElement(sfc, "Service Function Chain");
 
             InspectionHookEntity inspectionHookEntity = this.utils.findInspHookByInspectedAndPort(inspectedPort,
-                    dbInspectionPort);
+                    sfc);
 
             if (inspectionHookEntity == null) {
-                inspectionHookEntity = this.utils.makeInspectionHookEntity(inspectedPort, dbInspectionPort, tag,
-                        encType, order, failurePolicyType);
+                inspectionHookEntity = this.utils.makeInspectionHookEntity(inspectedPort, sfc);
+            } else {
+                String msg = String.format("Found existing inspection hook (Inspected %s ; Inspection Port %s)",
+                        inspectedPort, inspectionPort);
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
             }
 
             return this.em.merge(inspectionHookEntity);
