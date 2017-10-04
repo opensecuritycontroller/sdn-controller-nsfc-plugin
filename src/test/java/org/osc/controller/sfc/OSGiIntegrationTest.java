@@ -455,19 +455,21 @@ public class OSGiIntegrationTest {
 
         assertEquals(elementId, foundInspectionPort.getElementId());
         String ppgId = foundInspectionPort.getParentId();
+        String ingressPortId = foundInspectionPort.getIngressPort().getElementId();
+        String egressPortId = foundInspectionPort.getEgressPort().getElementId();
 
         this.redirApi.removeInspectionPort(inspectionPortElement);
 
-        foundInspectionPort = this.txControl.required(() -> {
-            return this.em.find(InspectionPortEntity.class, elementId);
+        this.txControl.required(() -> {
+
+            assertNull(this.em.find(InspectionPortEntity.class, elementId));
+            assertNull(this.em.find(PortPairGroupEntity.class, ppgId));
+            assertNull(this.em.find(NetworkElementEntity.class, ingressPortId));
+            assertNull(this.em.find(NetworkElementEntity.class, egressPortId));
+
+            return null;
         });
 
-        PortPairGroupEntity ppg = this.txControl.required(() -> {
-            return this.em.find(PortPairGroupEntity.class, ppgId);
-        });
-
-        assertNull(foundInspectionPort);
-        assertNull(ppg);
     }
 
     @Test

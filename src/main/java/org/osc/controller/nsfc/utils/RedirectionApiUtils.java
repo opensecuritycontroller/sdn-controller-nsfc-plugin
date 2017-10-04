@@ -181,10 +181,9 @@ public class RedirectionApiUtils {
     public void removeSingleInspectionPort(String inspectionPortId) {
         this.txControl.required(() -> {
 
-          Query q = this.em.createQuery("DELETE FROM InspectionPortEntity WHERE element_id = :id");
-          q.setParameter("id", inspectionPortId);
-          q.executeUpdate();
-          return null;
+            InspectionPortEntity inspectionPort = this.em.find(InspectionPortEntity.class, inspectionPortId);
+            this.em.remove(inspectionPort);
+            return null;
         });
     }
 
