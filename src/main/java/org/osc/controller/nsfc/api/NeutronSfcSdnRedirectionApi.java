@@ -90,7 +90,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
         String inspectionPortGroupId = inspectionPort.getParentId();
         if (inspectionPortGroupId != null) {
-            PortPairGroupEntity ppg = this.utils.findByPortgroupId(inspectionPortGroupId);
+            PortPairGroupEntity ppg = this.utils.findByPortPairgroupId(inspectionPortGroupId);
 
             //If Port group does not exist throw an exception
             if (ppg == null) {
@@ -132,11 +132,15 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             return;
         }
 
-        // should remove ppg if applicable
         InspectionPortElement foundInspectionPort = getInspectionPort(inspectionPort);
 
         if (foundInspectionPort != null) {
+            PortPairGroupEntity ppg = ((InspectionPortEntity) foundInspectionPort).getPortPairGroup();
             this.utils.removeSingleInspectionPort(foundInspectionPort.getElementId());
+            ppg.getPortPairs().remove(foundInspectionPort);
+            if(ppg.getPortPairs().size() == 0) {
+                this.utils.removePortPairGroup(ppg.getElementId());
+            }
         } else {
             NetworkElement ingress = inspectionPort.getIngressPort();
             NetworkElement egress = inspectionPort.getEgressPort();
@@ -147,7 +151,6 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     // Inspection Hooks methods
-
     @Override
     public String installInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)

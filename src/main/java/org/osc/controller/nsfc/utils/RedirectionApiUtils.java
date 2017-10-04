@@ -124,10 +124,19 @@ public class RedirectionApiUtils {
         }
     }
 
-    public PortPairGroupEntity findByPortgroupId(String parentId) {
+    public PortPairGroupEntity findByPortPairgroupId(String ppgId) {
 
         return this.txControl.required(() -> {
-            return this.em.find(PortPairGroupEntity.class, parentId);
+            return this.em.find(PortPairGroupEntity.class, ppgId);
+        });
+    }
+
+    public void removePortPairGroup(String ppgId) {
+
+        this.txControl.required(() -> {
+            PortPairGroupEntity ppg = this.em.find(PortPairGroupEntity.class, ppgId);
+            this.em.remove(ppg);
+            return null;
         });
     }
 

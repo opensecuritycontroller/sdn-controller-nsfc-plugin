@@ -505,7 +505,7 @@ public class OSGiIntegrationTest {
 
         RedirectionApiUtils utils = new RedirectionApiUtils(this.em, this.txControl);
 
-        PortPairGroupEntity ppg = utils.findByPortgroupId(portGroupId);
+        PortPairGroupEntity ppg = utils.findByPortPairgroupId(portGroupId);
         InspectionPortElement inspectionPortElement2 = new InspectionPortEntity(null, ppg,
                 new NetworkElementEntity("IngressFoo", asList("IngressMac"), asList("IngressIP"), null),
                 new NetworkElementEntity("EgressFoo", asList("EgressMac"), asList("EgressIP"), null));
@@ -601,15 +601,11 @@ public class OSGiIntegrationTest {
     }
 
     @Test
-    public void testApiRemoveInspectionPort() throws Exception {
+    public void testApi_RemoveSingleInspectionPort_VerifyPPGDeleted() throws Exception {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
         InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, this.ingress, this.egress);
 
-        String inspectedId = this.inspected.getElementId();
-        assertNotNull(inspectedId);
-
-        // expected before installInspectionHook
         Element registeredElement = this.redirApi.registerInspectionPort(inspectionPortElement);
 
         assertTrue(registeredElement instanceof InspectionPortEntity);
@@ -622,14 +618,62 @@ public class OSGiIntegrationTest {
         });
 
         assertEquals(elementId, foundInspectionPort.getElementId());
+        String ppgId = foundInspectionPort.getParentId();
 
-        // The inspectionPortElement does not have an id. Should still work.
         this.redirApi.removeInspectionPort(inspectionPortElement);
 
         foundInspectionPort = this.txControl.required(() -> {
             return this.em.find(InspectionPortEntity.class, elementId);
         });
 
-        assertEquals(null, foundInspectionPort);
+        PortPairGroupEntity ppg = this.txControl.required(() -> {
+            return this.em.find(PortPairGroupEntity.class, ppgId);
+        });
+
+        assertNull(foundInspectionPort);
+        assertNull(ppg);
+    }
+
+    @Test
+    public void testApi_RemoveSingleInspectionPort_VerifyPPGNotDeleted() throws Exception {
+        this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
+
+        InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, this.ingress, this.egress);
+
+        Element registeredElement = this.redirApi.registerInspectionPort(inspectionPortElement);
+
+        assertTrue(registeredElement instanceof InspectionPortEntity);
+
+        String elementId = registeredElement.getElementId();
+
+        InspectionPortEntity foundInspectionPort = this.txControl.required(() -> {
+            InspectionPortEntity tmpInspectionPort = this.em.find(InspectionPortEntity.class, elementId);
+            assertNotNull(tmpInspectionPort);
+            return tmpInspectionPort;
+        });
+
+        assertEquals(elementId, foundInspectionPort.getElementId());
+
+        InspectionPortElement inspectionPortElement2 = new InspectionPortEntity(null,
+                foundInspectionPort.getPortPairGroup(),
+                new NetworkElementEntity("IngressFoo", asList("IngressMac"), asList("IngressIP"), null),
+                new NetworkElementEntity("EgressFoo", asList("EgressMac"), asList("EgressIP"), null));
+
+        registeredElement = this.redirApi.registerInspectionPort(inspectionPortElement2);
+
+        String ppgId = foundInspectionPort.getParentId();
+
+        this.redirApi.removeInspectionPort(inspectionPortElement);
+
+        foundInspectionPort = this.txControl.required(() -> {
+            return this.em.find(InspectionPortEntity.class, elementId);
+        });
+
+        PortPairGroupEntity ppg = this.txControl.required(() -> {
+            return this.em.find(PortPairGroupEntity.class, ppgId);
+        });
+
+        assertNull(foundInspectionPort);
+        assertNotNull(ppg);
     }
 }

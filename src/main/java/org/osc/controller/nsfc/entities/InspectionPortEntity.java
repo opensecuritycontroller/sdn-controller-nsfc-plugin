@@ -38,6 +38,9 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 import org.osc.sdk.controller.element.InspectionPortElement;
 
+/**
+ * Translates to a port pair in SFC
+ */
 @Entity
 @Table(name = "INSPECTION_PORT")
 public class InspectionPortEntity implements InspectionPortElement {
@@ -130,6 +133,36 @@ public class InspectionPortEntity implements InspectionPortElement {
         return "InspectionPortEntity [elementId=" + this.elementId + ", portPairGroup=" + getParentId()
                 + ", ingressPort=" + this.ingressPort + ", egressPort=" + this.egressPort + ", inspectionHooks="
                 + this.inspectionHooks + "]";
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((this.elementId == null) ? 0 : this.elementId.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        InspectionPortEntity other = (InspectionPortEntity) obj;
+        if (this.elementId == null) {
+            if (other.elementId != null) {
+                return false;
+            }
+        } else if (!this.elementId.equals(other.elementId)) {
+            return false;
+        }
+        return true;
     }
 
 }
