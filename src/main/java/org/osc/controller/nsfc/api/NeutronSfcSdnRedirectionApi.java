@@ -164,7 +164,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             throw new IllegalArgumentException("Attempt to install an Inspection Hook with null Inspection Port");
         }
 
-        LOG.info(String.format("Installing Inspection Hook for (Inspected %s ; Inspection Port %s):",
+        LOG.info(String.format("Installing Inspection Hook for (Inspected Port %s ; Inspection Port %s):",
                 "" + inspectedPort, "" + inspectionPort));
 
         InspectionHookEntity retValEntity = this.txControl.required(() -> {
@@ -177,7 +177,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             if (inspectionHookEntity == null) {
                 inspectionHookEntity = this.utils.makeInspectionHookEntity(inspectedPort, sfc);
             } else {
-                String msg = String.format("Found existing inspection hook (Inspected %s ; Inspection Port %s)",
+                String msg = String.format("Found existing inspection hook (Inspected Port %s ; Inspection Port %s)",
                         inspectedPort, inspectionPort);
                 LOG.error(msg);
                 throw new IllegalStateException(msg);
