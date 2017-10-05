@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.osc.controller.sfc;
+package org.osc.controller.nsfc;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -157,7 +157,7 @@ public class OSGiIntegrationTest {
                     mavenBundle("com.fasterxml", "classmate").versionAsInProject(),
                     mavenBundle("org.javassist", "javassist").versionAsInProject(),
 
-                    mavenBundle("log4j", "log4j").versionAsInProject(),
+                    mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
 
                     mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
 
