@@ -173,7 +173,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             } else {
                 String msg = String.format("Found existing inspection hook (Inspected %s ; Inspection Port %s)",
                         inspectedPort, inspectionPort);
-                LOG.error(msg);
+                LOG.error(msg + " " + inspectionHookEntity);
                 throw new IllegalStateException(msg);
             }
             return this.em.merge(inspectionHookEntity);

@@ -223,17 +223,6 @@ public class RedirectionApiUtils {
         });
     }
 
-    public void throwExceptionIfNullEntity(InspectionPortEntity inspectionPortEntity, InspectionPortElement inspectionPort)
-            throws IllegalArgumentException {
-        if (inspectionPortEntity == null) {
-            String msg = String.format(
-                    "Cannot find inspection port for inspection hook id: %s; ingress: %s; egress: %s\n",
-                    inspectionPort.getElementId(), inspectionPort.getIngressPort(), inspectionPort.getEgressPort());
-            LOG.error(msg);
-            throw new IllegalArgumentException(msg);
-        }
-    }
-
     /**
      * Throw exception message in the format "null passed for 'type'!"
      */
