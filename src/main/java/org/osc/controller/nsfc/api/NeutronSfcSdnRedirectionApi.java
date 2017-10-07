@@ -246,25 +246,76 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
     // SFC methods
     @Override
-    public NetworkElement registerNetworkElement(List<NetworkElement> inspectedPorts) throws Exception {
-        return null;
+    public NetworkElement registerNetworkElement(List<NetworkElement> inspectionPorts) throws Exception {
+       
+        ServiceFunctionChainEntity sfc = new ServiceFunctionChainEntity();
+        //check for null or empty list
+        this.utils.throwExceptionIfNullOrEmptyNetworElementList(inspectionPorts, "PortPairGroup memeber list");
+     
+        this.utils.addPortPairGroupToServiceFunction(inspectionPorts, sfc);
+        return this.txControl.required(() -> {
+            this.em.merge(sfc);
+            return this.utils.sendServiceFunctionChainId(sfc);
+        });
+       
     }
 
     @Override
-    public NetworkElement updateNetworkElement(NetworkElement portGroup, List<NetworkElement> inspectedPorts)
+    public NetworkElement updateNetworkElement(NetworkElement portGroup, List<NetworkElement> inspectionPorts)
             throws Exception {
-        // no-op
-        return null;
+        
+        this.utils.throwExceptionIfNullElementAndParentId(portGroup, "PortPairGroup ServiceFunctionChain Id");
+        this.utils.throwExceptionIfNullOrEmptyNetworElementList(inspectionPorts, "PortPairGroup update memeber list");
+       
+        return this.txControl.required(() -> {
+            ServiceFunctionChainEntity sfc = this.utils.findBySfcId(portGroup.getParentId());
+            
+            if(sfc == null) {
+                throw new IllegalStateException(String.format("Failed to Update serviceFunctionChain : %s ",portGroup.getParentId()
+                         + "\n" + "Reason : Unable to find serviceFunctionChain" , portGroup.getParentId()));
+            }
+            sfc.getPortPairGroups().clear();
+            this.utils.addPortPairGroupToServiceFunction(inspectionPorts, sfc);
+            this.em.merge(sfc);
+            return this.utils.sendServiceFunctionChainId(sfc);
+        });   
     }
 
     @Override
     public void deleteNetworkElement(NetworkElement portGroupId) throws Exception {
-        // no-op
+        this.utils.throwExceptionIfNullElementAndId(portGroupId, "PortPairGroupId");
+        this.utils.throwExceptionIfNullElementAndParentId(portGroupId, "PortPairGroupId Parent");
+       
+        this.txControl.required(() -> {
+            ServiceFunctionChainEntity sfc = this.utils.findBySfcId(portGroupId.getParentId());           
+            if(sfc == null) {
+                throw new IllegalStateException(String.format("Failed to delete PortPairGroupId : %s ", portGroupId.getElementId()
+                         + "\n" + "Reason : Unable to find serviceFunctionChain Id : %s" , portGroupId.getParentId()));
+            }
+            
+            sfc.getPortPairGroups().remove(portGroupId.getElementId());
+            
+            if(sfc.getPortPairGroups().isEmpty()) {
+                this.em.remove(sfc);
+            } else {
+                this.em.merge(sfc);
+            }
+            
+            return null;
+        });   
     }
 
     @Override
     public List<NetworkElement> getNetworkElements(NetworkElement element) throws Exception {
-        return null;
+      return null;
+ /*       this.utils.throwExceptionIfNullElementAndParentId(element, "PortPairGroupId Parent");
+        this.txControl.required(() -> {
+            ServiceFunctionChainEntity sfc = this.utils.findBySfcId(element.getParentId());           
+            if(sfc == null) {
+                throw new IllegalStateException(String.format("Failed to get serviceFunctionChain : %s ",element.getParentId()
+                         + "\n" + "Reason : Unable to find serviceFunctionChain" , element.getParentId()));
+            }
+            return sfc.getPortPairGroups();*/
     }
 
     // Unsupported operations in SFC
