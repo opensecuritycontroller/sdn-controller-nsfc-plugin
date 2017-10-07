@@ -16,6 +16,7 @@
  *******************************************************************************/
 package org.osc.controller.nsfc.api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -26,6 +27,7 @@ import org.osc.controller.nsfc.entities.NetworkElementEntity;
 import org.osc.controller.nsfc.entities.PortPairGroupEntity;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
 import org.osc.controller.nsfc.utils.RedirectionApiUtils;
+import org.osc.sdk.controller.DefaultNetworkPort;
 import org.osc.sdk.controller.FailurePolicyType;
 import org.osc.sdk.controller.TagEncapsulationType;
 import org.osc.sdk.controller.api.SdnRedirectionApi;
@@ -307,15 +309,26 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
     @Override
     public List<NetworkElement> getNetworkElements(NetworkElement element) throws Exception {
-      return null;
- /*       this.utils.throwExceptionIfNullElementAndParentId(element, "PortPairGroupId Parent");
-        this.txControl.required(() -> {
+
+       this.utils.throwExceptionIfNullElementAndParentId(element, "PortPairGroupId Parent");
+        this.utils.throwExceptionIfNullElementAndId(element, "PortPairGroupId Parent");
+        
+        return this.txControl.required(() -> {
+
             ServiceFunctionChainEntity sfc = this.utils.findBySfcId(element.getParentId());           
             if(sfc == null) {
                 throw new IllegalStateException(String.format("Failed to get serviceFunctionChain : %s ",element.getParentId()
                          + "\n" + "Reason : Unable to find serviceFunctionChain" , element.getParentId()));
             }
-            return sfc.getPortPairGroups();*/
+            List<NetworkElement> networkElementList = new ArrayList<>();
+            for(PortPairGroupEntity ppg : sfc.getPortPairGroups()) {
+                DefaultNetworkPort ne = new DefaultNetworkPort();
+                ne.setElementId(ppg.getElementId());
+                ne.setParentId(sfc.getElementId());
+                networkElementList.add(ne);
+            }
+            return networkElementList;
+        });
     }
 
     // Unsupported operations in SFC
