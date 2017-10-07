@@ -267,12 +267,12 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             throws Exception {
 
         this.utils.throwExceptionIfNullElementAndId(portGroup, "Port Pair Group ServiceFunctionChain Id");
-        this.utils.throwExceptionIfNullOrEmptyNetworElementList(inspectionPorts, "PortPairGroup update memeber list");
+        this.utils.throwExceptionIfNullOrEmptyNetworElementList(inspectionPorts, "Port Pair Group update memeber list");
         ServiceFunctionChainEntity sfc = this.utils.findBySfcId(portGroup.getParentId());
 
         if (sfc == null) {
-            throw new IllegalStateException(String.format("Failed to Update serviceFunctionChain : %s ",
-                    portGroup.getParentId() + "\n" + "Reason : Unable to find serviceFunctionChain",
+            throw new IllegalStateException(String.format("Failed to Update ServiceFunctionChain Id: %s ",
+                    portGroup.getParentId() + "\n" + "Reason : Unable to find ServiceFunctionChain Id %s",
                     portGroup.getParentId()));
         }
 
@@ -285,27 +285,19 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public void deleteNetworkElement(NetworkElement portGroupId) throws Exception {
-        this.utils.throwExceptionIfNullElementAndId(portGroupId, "PortPairGroupId");
-        this.utils.throwExceptionIfNullElementAndParentId(portGroupId, "PortPairGroupId Parent");
+    public void deleteNetworkElement(NetworkElement serviceFunctionChainId) throws Exception {
+        
+        this.utils.throwExceptionIfNullElementAndId(serviceFunctionChainId, "ServiceFunctionChain Id");
 
-        ServiceFunctionChainEntity sfc = this.utils.findBySfcId(portGroupId.getParentId());
+        ServiceFunctionChainEntity sfc = this.utils.findBySfcId(serviceFunctionChainId.getElementId());
         if (sfc == null) {
-            throw new IllegalStateException(String.format("Failed to delete PortPairGroupId : %s ",
-                    portGroupId.getElementId() + "\n" + "Reason : Unable to find serviceFunctionChain Id : %s",
-                    portGroupId.getParentId()));
+            throw new IllegalStateException(String.format("Failed to delete ServiceFunctionChain Id : %s ",
+                    serviceFunctionChainId.getElementId() + "\n" + "Reason : Unable to find ServiceFunctionChain Id : %s",
+                    serviceFunctionChainId.getElementId()));
         }
 
-        this.txControl.required(() -> {
-
-            sfc.getPortPairGroups().remove(portGroupId.getElementId());
-
-            if (sfc.getPortPairGroups().isEmpty()) {
+        this.txControl.required(() -> {     
                 this.em.remove(sfc);
-            } else {
-                this.em.merge(sfc);
-            }
-
             return null;
         });
     }
@@ -313,13 +305,13 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     @Override
     public List<NetworkElement> getNetworkElements(NetworkElement element) throws Exception {
 
-        this.utils.throwExceptionIfNullElementAndParentId(element, "PortPairGroupId Parent");
-        this.utils.throwExceptionIfNullElementAndId(element, "PortPairGroupId Parent");
+        this.utils.throwExceptionIfNullElementAndParentId(element, "Port Pair Group Id Parent");
+        this.utils.throwExceptionIfNullElementAndId(element, "Port Pair GroupId Parent");
 
         ServiceFunctionChainEntity sfc = this.utils.findBySfcId(element.getParentId());
         if (sfc == null) {
-            throw new IllegalStateException(String.format("Failed to get serviceFunctionChain : %s ",
-                    element.getParentId() + "\n" + "Reason : Unable to find serviceFunctionChain",
+            throw new IllegalStateException(String.format("Failed to get ServiceFunctionChain : %s ",
+                    element.getParentId() + "\n" + "Reason : Unable to find ServiceFunctionChain",
                     element.getParentId()));
         }
         //do we need to have transaction for get?
