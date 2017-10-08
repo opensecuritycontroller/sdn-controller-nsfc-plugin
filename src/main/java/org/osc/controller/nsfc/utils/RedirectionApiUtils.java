@@ -30,7 +30,6 @@ import org.osc.controller.nsfc.entities.InspectionPortEntity;
 import org.osc.controller.nsfc.entities.NetworkElementEntity;
 import org.osc.controller.nsfc.entities.PortPairGroupEntity;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
-import org.osc.sdk.controller.DefaultNetworkPort;
 import org.osc.sdk.controller.element.Element;
 import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
@@ -225,11 +224,19 @@ public class RedirectionApiUtils {
         });
     }
     
-    public void addPortPairGroupToServiceFunction(List<NetworkElement> inspectionPorts, ServiceFunctionChainEntity sfc) {
+    public void addPortPairGroupToServiceFunction(List<NetworkElement> inspectionPorts,
+            ServiceFunctionChainEntity sfc) {
         List<PortPairGroupEntity> ppgList = new ArrayList<PortPairGroupEntity>();
         for (NetworkElement ne : inspectionPorts) {
-            throwExceptionIfNullElementAndId(ne, "PortPairGroup");  
-           throwExceptionIfNullElementAndParentId(ne, "PortPairGroup ServiceFunctionChain Id");
+            throwExceptionIfNullElementAndId(ne, "Port Pair Group Id");
+            if(sfc.getElementId() != null) { //then we should have parent element
+                throwExceptionIfNullElementAndParentId(ne, "Port Pair Group ServiceFunctionChain Id"); 
+            }
+
+            if (findByPortPairgroupId(ne.getElementId()) == null) {
+                throw new IllegalArgumentException(
+                        String.format("Port Pair Group Id %s is not configured", ne.getElementId()));
+            }
             
             PortPairGroupEntity ppg = new PortPairGroupEntity(ne.getElementId());
             ppg.setServiceFunctionChain(sfc);
@@ -238,12 +245,6 @@ public class RedirectionApiUtils {
         sfc.setPortPairGroups(ppgList);
     }
     
-    public NetworkElement sendServiceFunctionChainId(ServiceFunctionChainEntity sfc) {
-        DefaultNetworkPort serviceFunctionChainId = new DefaultNetworkPort();
-        serviceFunctionChainId.setElementId(sfc.getElementId());
-        return serviceFunctionChainId;
-    }
-
     /**
      * Throw exception message in the format "null passed for 'type'!"
      */
