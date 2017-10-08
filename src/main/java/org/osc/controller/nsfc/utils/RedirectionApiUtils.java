@@ -223,28 +223,22 @@ public class RedirectionApiUtils {
             return inspectionHooks.get(0);
         });
     }
-    
-    public void addPortPairGroupToServiceFunction(List<NetworkElement> inspectionPorts,
+
+    public void validateAndAdd(List<NetworkElement> portPairGroups,
             ServiceFunctionChainEntity sfc) {
         List<PortPairGroupEntity> ppgList = new ArrayList<PortPairGroupEntity>();
-        for (NetworkElement ne : inspectionPorts) {
+        PortPairGroupEntity ppg;
+        for (NetworkElement ne : portPairGroups) {
             throwExceptionIfNullElementAndId(ne, "Port Pair Group Id");
-            if(sfc.getElementId() != null) { //then we should have parent element
-                throwExceptionIfNullElementAndParentId(ne, "Port Pair Group ServiceFunctionChain Id"); 
-            }
+            ppg = findByPortPairgroupId(ne.getElementId());
+            throwExceptionIfCannotFindById(ppg, "Port Pair Group", ne.getElementId());
 
-            if (findByPortPairgroupId(ne.getElementId()) == null) {
-                throw new IllegalArgumentException(
-                        String.format("Port Pair Group Id %s is not configured", ne.getElementId()));
-            }
-            
-            PortPairGroupEntity ppg = new PortPairGroupEntity(ne.getElementId());
             ppg.setServiceFunctionChain(sfc);
             ppgList.add(ppg);
         }
         sfc.setPortPairGroups(ppgList);
     }
-    
+
     /**
      * Throw exception message in the format "null passed for 'type'!"
      */
@@ -277,18 +271,18 @@ public class RedirectionApiUtils {
             throw new IllegalArgumentException(msg);
         }
     }
-    
+
     /**
      * Throw exception message in the format "null passed for 'type'!"
      */
-    public void throwExceptionIfNullOrEmptyNetworElementList(List<NetworkElement> neList, String type) {
+    public void throwExceptionIfNullOrEmptyNetworkElementList(List<NetworkElement> neList, String type) {
         if (neList == null || neList.isEmpty()) {
             String msg = String.format("null passed for %s !", type);
             LOG.error(msg);
             throw new IllegalArgumentException(msg);
         }
     }
-    
+
     /**
     * Throw exception message in the format "null passed for 'type'!"
     */
