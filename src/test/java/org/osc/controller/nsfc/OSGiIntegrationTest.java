@@ -773,7 +773,7 @@ public class OSGiIntegrationTest {
     }
 
     @Test
-    public void testUpdateNetworkElementWithNullPortGroup_ThrowsIllegalArgumentException() throws Exception {
+    public void testUpdateNetworkElementWithNullSfc_ThrowsIllegalArgumentException() throws Exception {
         // Arrange
         List<NetworkElement> neList = new ArrayList<NetworkElement>();
         this.exception.expect(IllegalArgumentException.class);
@@ -803,7 +803,7 @@ public class OSGiIntegrationTest {
         // Arrange
         DefaultNetworkPort ne = new DefaultNetworkPort();
         this.exception.expect(IllegalArgumentException.class);
-        this.exception.expectMessage(String.format("null passed for %s !", "Port Pair Group update memeber list"));
+        this.exception.expectMessage(String.format("null passed for %s !", "Port Pair Group update member list"));
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
         ne.setElementId("goodid");
 
@@ -817,7 +817,7 @@ public class OSGiIntegrationTest {
         List<NetworkElement> neList = new ArrayList<NetworkElement>();
         DefaultNetworkPort ne = new DefaultNetworkPort();
         this.exception.expect(IllegalArgumentException.class);
-        this.exception.expectMessage(String.format("null passed for %s !", "Port Pair Group update memeber list"));
+        this.exception.expectMessage(String.format("null passed for %s !", "Port Pair Group update member list"));
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
         ne.setElementId("goodid");
 

@@ -261,14 +261,14 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public NetworkElement updateNetworkElement(NetworkElement portGroup, List<NetworkElement> inspectionPorts)
+    public NetworkElement updateNetworkElement(NetworkElement serviceFunctionChain, List<NetworkElement> inspectionPorts)
             throws Exception {
 
-        this.utils.throwExceptionIfNullElementAndId(portGroup, "Port Pair Group Service Function Chain Id");
-        this.utils.throwExceptionIfNullOrEmptyNetworkElementList(inspectionPorts, "Port Pair Group update memeber list");
+        this.utils.throwExceptionIfNullElementAndId(serviceFunctionChain, "Port Pair Group Service Function Chain Id");
+        this.utils.throwExceptionIfNullOrEmptyNetworkElementList(inspectionPorts, "Port Pair Group update member list");
 
-        ServiceFunctionChainEntity sfc = this.utils.findBySfcId(portGroup.getElementId());
-        this.utils.throwExceptionIfCannotFindById(sfc, "Service Function Chain", portGroup.getElementId());
+        ServiceFunctionChainEntity sfc = this.utils.findBySfcId(serviceFunctionChain.getElementId());
+        this.utils.throwExceptionIfCannotFindById(sfc, "Service Function Chain", serviceFunctionChain.getElementId());
 
         sfc.getPortPairGroups().clear();
         this.utils.validateAndAdd(inspectionPorts, sfc);
@@ -296,7 +296,6 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
                 return null;
             });
         } catch (Exception e) {
-           // this.utils.throwExceptionIfCannotFindById(null, "Service Function Chain", serviceFunctionChainId.getElementId());
             String msg = String.format("Cannot find %s by id: %s!", "Service Function Chain", serviceFunctionChainId.getElementId());
             throw new IllegalArgumentException(msg);
         }
