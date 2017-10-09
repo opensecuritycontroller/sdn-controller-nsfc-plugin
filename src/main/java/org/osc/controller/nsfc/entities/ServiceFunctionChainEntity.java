@@ -64,11 +64,11 @@ public class ServiceFunctionChainEntity implements NetworkElement, InspectionPor
 
     @Override
     public String getElementId() {
-        return elementId;
+        return this.elementId;
     }
 
     public List<PortPairGroupEntity> getPortPairGroups() {
-        return portPairGroups;
+        return this.portPairGroups;
     }
 
     public void setPortPairGroups(List<PortPairGroupEntity> portPairGroups) {
@@ -76,12 +76,12 @@ public class ServiceFunctionChainEntity implements NetworkElement, InspectionPor
     }
 
     public Set<InspectionHookEntity> getInspectionHooks() {
-        return inspectionHooks;
+        return this.inspectionHooks;
     }
 
     @Override
     public String toString() {
-        return "ServiceFunctionChainEntity [elementId=" + elementId + ", portPairGroups=" + portPairGroups + "]";
+        return "ServiceFunctionChainEntity [elementId=" + this.elementId + ", portPairGroups=" + this.portPairGroups + "]";
     }
 
     @Override

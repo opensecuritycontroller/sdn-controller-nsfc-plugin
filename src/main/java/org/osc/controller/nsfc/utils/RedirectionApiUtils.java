@@ -224,19 +224,36 @@ public class RedirectionApiUtils {
         });
     }
 
-    public void validateAndAdd(List<NetworkElement> portPairGroups,
-            ServiceFunctionChainEntity sfc) {
+    public List<PortPairGroupEntity> validateAndAdd(List<NetworkElement> portPairGroups, ServiceFunctionChainEntity sfc) {
         List<PortPairGroupEntity> ppgList = new ArrayList<PortPairGroupEntity>();
-        PortPairGroupEntity ppg;
+
         for (NetworkElement ne : portPairGroups) {
             throwExceptionIfNullElementAndId(ne, "Port Pair Group Id");
-            ppg = findByPortPairgroupId(ne.getElementId());
+            PortPairGroupEntity ppg = findByPortPairgroupId(ne.getElementId());
             throwExceptionIfCannotFindById(ppg, "Port Pair Group", ne.getElementId());
+            if (ppg.getServiceFunctionChain() != null) {
+                throw new IllegalArgumentException(
+                        String.format("Port Pair Group Id %s is already chained to SFC Id : %s ", ne.getElementId(),
+                                ppg.getServiceFunctionChain().getElementId()));
+            }
 
             ppg.setServiceFunctionChain(sfc);
             ppgList.add(ppg);
         }
         sfc.setPortPairGroups(ppgList);
+        return ppgList;
+    }
+
+    public void validateAndClear(ServiceFunctionChainEntity sfc) {
+
+        this.txControl.required(() -> {
+        for(PortPairGroupEntity ppg : sfc.getPortPairGroups()) {
+              ppg.setServiceFunctionChain(null);
+              this.em.merge(ppg);
+            }
+            return null;
+        });
+        sfc.getPortPairGroups().clear();
     }
 
     /**
