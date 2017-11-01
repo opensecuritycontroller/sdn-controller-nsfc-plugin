@@ -1,4 +1,4 @@
-package org.osc.controller.nsfc;
+     package org.osc.controller.nsfc;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
@@ -10,9 +10,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.core.StringStartsWith;
 import org.junit.After;
 import org.junit.Assert;
@@ -20,6 +21,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.Answers;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.osc.controller.nsfc.api.NeutronSfcSdnRedirectionApi;
 import org.osc.controller.nsfc.entities.InspectionHookEntity;
@@ -29,23 +33,25 @@ import org.osc.controller.nsfc.entities.PortPairGroupEntity;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
 import org.osc.controller.nsfc.utils.RedirectionApiUtils;
 import org.osc.sdk.controller.DefaultNetworkPort;
-import org.osc.sdk.controller.api.SdnRedirectionApi;
 import org.osc.sdk.controller.element.Element;
 import org.osc.sdk.controller.element.InspectionHookElement;
 import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
 public class NeutronSfcSdnRedirectionApiTest {
 
-    @Mock
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private TestTransactionControl txControl;
+
     private EntityManager em;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @Inject
-    SdnRedirectionApi redirApi;
+    @InjectMocks
+    NeutronSfcSdnRedirectionApi redirApi;
 
     @Before
     public void setup() {
@@ -65,7 +71,7 @@ public class NeutronSfcSdnRedirectionApiTest {
         persistInspectionPort();
 
         InspectionPortEntity tmp = this.txControl.requiresNew(() -> {
-            return this.em.find(InspectionPortEntity.class, NeutronSfcSdnRedirectionApiTestData.inspectionPort.getElementId());
+            return this.em.find(InspectionPortEntity.class, inspectionPort.getElementId());
         });
 
         assertEquals(2, tmp.getEgressPort().getMacAddresses().size());
@@ -81,10 +87,10 @@ public class NeutronSfcSdnRedirectionApiTest {
 
         RedirectionApiUtils utils = new RedirectionApiUtils(this.em, this.txControl);
 
-        InspectionPortEntity foundPort = utils.findInspectionPortByNetworkElements(NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortEntity foundPort = utils.findInspectionPortByNetworkElements(ingress, egress);
 
         assertNotNull(foundPort);
-        assertEquals(NeutronSfcSdnRedirectionApiTestData.inspectionPort.getElementId(), foundPort.getElementId());
+        assertEquals(inspectionPort.getElementId(), foundPort.getElementId());
     }
 
     @Test
@@ -100,11 +106,11 @@ public class NeutronSfcSdnRedirectionApiTest {
             InspectionHookEntity ihe = utils.findInspHookByInspectedAndPort(inspected, tmpSfc);
 
             assertNotNull(ihe);
-            assertEquals(NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId(), ihe.getHookId());
+            assertEquals(inspectionHook.getHookId(), ihe.getHookId());
             return ihe;
         });
 
-        assertEquals(foundIH.getHookId(), NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+        assertEquals(foundIH.getHookId(), inspectionHook.getHookId());
         assertEquals(foundIH.getServiceFunctionChain().getElementId(), sfc.getElementId());
         assertEquals(foundIH.getInspectedPort().getElementId(), inspected.getElementId());
 
@@ -116,10 +122,10 @@ public class NeutronSfcSdnRedirectionApiTest {
 
         RedirectionApiUtils utils = new RedirectionApiUtils(this.em, this.txControl);
 
-        utils.removeSingleInspectionHook(NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+        utils.removeSingleInspectionHook(inspectionHook.getHookId());
 
         InspectionHookEntity inspectionHookEntity = this.txControl.required(() -> {
-            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, inspectionHook.getHookId());
             return tmpInspectionHook;
         });
 
@@ -132,7 +138,7 @@ public class NeutronSfcSdnRedirectionApiTest {
     public void testApiRegisterInspectionPort() throws Exception {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
-        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, ingress, egress);
         inspectionPortElement = (InspectionPortElement) this.redirApi.registerInspectionPort(inspectionPortElement);
 
         // Here we are mostly afraid of LazyInitializationException
@@ -177,12 +183,12 @@ public class NeutronSfcSdnRedirectionApiTest {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
         this.txControl.required(() -> {
-            this.em.persist(NeutronSfcSdnRedirectionApiTestData.ingress);
-            this.em.persist(NeutronSfcSdnRedirectionApiTestData.egress);
+            this.em.persist(ingress);
+            this.em.persist(egress);
             return null;
         });
 
-        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, ingress, egress);
 
         // ... and the test
         inspectionPortElement = (InspectionPortElement) this.redirApi.registerInspectionPort(inspectionPortElement);
@@ -191,15 +197,15 @@ public class NeutronSfcSdnRedirectionApiTest {
         assertNotNull(inspectionPortElement.getParentId());
         assertNotNull(inspectionPortElement.getIngressPort());
         assertNotNull(inspectionPortElement.getEgressPort());
-        assertEquals(NeutronSfcSdnRedirectionApiTestData.ingress.getElementId(), inspectionPortElement.getIngressPort().getElementId());
-        assertEquals(NeutronSfcSdnRedirectionApiTestData.egress.getElementId(), inspectionPortElement.getEgressPort().getElementId());
+        assertEquals(ingress.getElementId(), inspectionPortElement.getIngressPort().getElementId());
+        assertEquals(egress.getElementId(), inspectionPortElement.getEgressPort().getElementId());
     }
 
     @Test
     public void testApiRegisterInspectionPortWithParentId() throws Exception {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
-        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, null, ingress, egress);
         Element result = this.redirApi.registerInspectionPort(inspectionPortElement);
 
         assertNotNull(result.getParentId());
@@ -226,8 +232,8 @@ public class NeutronSfcSdnRedirectionApiTest {
         PortPairGroupEntity ppg = new PortPairGroupEntity();
         ppg.setElementId("fooportgroup");
 
-        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, ppg, NeutronSfcSdnRedirectionApiTestData.ingress,
-                NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortElement inspectionPortElement = new InspectionPortEntity(null, ppg, ingress,
+                egress);
         this.redirApi.registerInspectionPort(inspectionPortElement);
     }
 
@@ -235,7 +241,7 @@ public class NeutronSfcSdnRedirectionApiTest {
     public void testApi_RemoveSingleInspectionPort_VerifyPPGDeleted() throws Exception {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
-        InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, ingress, egress);
 
         Element registeredElement = this.redirApi.registerInspectionPort(inspectionPortElement);
 
@@ -271,7 +277,7 @@ public class NeutronSfcSdnRedirectionApiTest {
     public void testApi_RemoveSingleInspectionPort_VerifyPPGNotDeleted() throws Exception {
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
-        InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, NeutronSfcSdnRedirectionApiTestData.ingress, NeutronSfcSdnRedirectionApiTestData.egress);
+        InspectionPortEntity inspectionPortElement = new InspectionPortEntity(null, null, ingress, egress);
 
         Element registeredElement = this.redirApi.registerInspectionPort(inspectionPortElement);
 
@@ -387,7 +393,7 @@ public class NeutronSfcSdnRedirectionApiTest {
     public void testApiUpdateInspectionHook_WithExistingHook_VerifySucceeds() throws Exception {
         persistInspectionHook();
 
-        String hookId = NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId();
+        String hookId = inspectionHook.getHookId();
 
         this.redirApi = new NeutronSfcSdnRedirectionApi(this.txControl, this.em);
 
@@ -441,7 +447,7 @@ public class NeutronSfcSdnRedirectionApiTest {
         persistInspectionHook();
 
         InspectionHookEntity inspectionHookEntity = this.txControl.required(() -> {
-            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, inspectionHook.getHookId());
             return tmpInspectionHook;
         });
 
@@ -451,7 +457,7 @@ public class NeutronSfcSdnRedirectionApiTest {
         this.redirApi.removeInspectionHook(inspectionHookEntity.getHookId());
 
         inspectionHookEntity = this.txControl.required(() -> {
-            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, inspectionHook.getHookId());
             return tmpInspectionHook;
         });
 
@@ -468,7 +474,7 @@ public class NeutronSfcSdnRedirectionApiTest {
         persistInspectionHook();
 
         InspectionHookElement inspectionHookElement = this.txControl.required(() -> {
-            InspectionHookEntity tmp = this.em.find(InspectionHookEntity.class, NeutronSfcSdnRedirectionApiTestData.inspectionHook.getHookId());
+            InspectionHookEntity tmp = this.em.find(InspectionHookEntity.class, inspectionHook.getHookId());
             assertNotNull(tmp);
             assertEquals(tmp.getServiceFunctionChain().getElementId(), sfc.getElementId());
             return tmp;
@@ -667,7 +673,22 @@ public class NeutronSfcSdnRedirectionApiTest {
         neList.add(ne);
 
         this.exception.expect(IllegalArgumentException.class);
-        this.exception.expectMessage(String.format("null passed for %s !", "Port Pair Group Id"));
+
+        this.exception.expectMessage(new BaseMatcher<String>() {
+
+            @Override
+            public boolean matches(Object s) {
+                if (!(s instanceof String)) {
+                    return false;
+                }
+                return ((String)s).matches(".*null.+Port Pair Group Service Function Chain Id.*");
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                // TODO Auto-generated method stub
+
+            }});
 
         // Act
         this.redirApi.updateNetworkElement(sfc, neList);
@@ -878,13 +899,13 @@ public class NeutronSfcSdnRedirectionApiTest {
         return this.txControl.required(() -> {
             this.em.persist(ppg);
 
-            NeutronSfcSdnRedirectionApiTestData.inspectionPort.setPortPairGroup(ppg);
-            this.em.persist(NeutronSfcSdnRedirectionApiTestData.inspectionPort);
+            inspectionPort.setPortPairGroup(ppg);
+            this.em.persist(inspectionPort);
 
-            ppg.getPortPairs().add(NeutronSfcSdnRedirectionApiTestData.inspectionPort);
+            ppg.getPortPairs().add(inspectionPort);
 
             this.em.merge(ppg);
-            return NeutronSfcSdnRedirectionApiTestData.inspectionPort;
+            return inspectionPort;
         });
     }
 
