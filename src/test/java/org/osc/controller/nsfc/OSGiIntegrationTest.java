@@ -16,13 +16,13 @@
  *******************************************************************************/
 package org.osc.controller.nsfc;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.*;
 import static org.ops4j.pax.exam.CoreOptions.*;
 import static org.osgi.service.jdbc.DataSourceFactory.*;
+import static org.osgi.service.jpa.EntityManagerFactoryBuilder.JPA_UNIT_NAME;
 
-import java.io.File;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -62,10 +62,7 @@ import org.osgi.service.transaction.control.jpa.JPAEntityManagerProviderFactory;
 @ExamReactorStrategy(PerClass.class)
 public class OSGiIntegrationTest {
 
-    private static final String TEST_DB_URL_PREFIX = "jdbc:h2:";
-    private static final String TEST_DB_FILENAME = "./nsfcPlugin_OSGiIntegrationTest";
-    private static final String TEST_DB_URL_SUFFIX = ";MVCC\\=FALSE;LOCK_TIMEOUT\\=10000;MV_STORE=FALSE;";
-    private static final String TEST_DB_URL = TEST_DB_URL_PREFIX + TEST_DB_FILENAME + TEST_DB_URL_SUFFIX;
+    private static final String TEST_DB_URL = "jdbc:h2:mem:nsfc-osgi-db;DB_CLOSE_DELAY=-1";
 
     @Inject
     BundleContext context;
@@ -83,7 +80,7 @@ public class OSGiIntegrationTest {
 
     private EntityManager em;
 
-    private NeutronSfcSdnRedirectionApi redirApi;
+    private SdnRedirectionApi redirApi;
 
     private static final VirtualizationConnectorElement VC =
             new VirtualizationConnectorElement() {
@@ -150,7 +147,6 @@ public class OSGiIntegrationTest {
                     return null;
                 }
     };
-
 
     @org.ops4j.pax.exam.Configuration
     public Option[] config() {
@@ -236,7 +232,6 @@ public class OSGiIntegrationTest {
         assertNotNull(this.resourceFactory);
 
         Properties props = new Properties();
-
         props.setProperty(JDBC_URL, TEST_DB_URL);
         props.setProperty(JDBC_USER, "admin");
         props.setProperty(JDBC_PASSWORD, "admin123");
@@ -248,8 +243,11 @@ public class OSGiIntegrationTest {
             Assert.fail(e.getClass() + " : " + e.getMessage());
         }
 
+        Map<String, Object> emfBuilderProps = new HashMap<>();
+        emfBuilderProps.put("javax.persistence.nonJtaDataSource", ds);
+        emfBuilderProps.put(JPA_UNIT_NAME, "nsfc-mgr");
         this.em = this.resourceFactory
-                .getProviderFor(this.builder, singletonMap("javax.persistence.nonJtaDataSource", (Object) ds), null)
+                .getProviderFor(this.builder, emfBuilderProps, null)
                 .getResource(this.txControl);
 
         assertNotNull(this.em);
@@ -257,19 +255,12 @@ public class OSGiIntegrationTest {
 
     @After
     public void tearDown() throws Exception {
+        this.txControl.required(() -> {
+            this.em.createNativeQuery("drop all objects").executeUpdate(); return null;
+        });
 
         if (this.redirApi != null) {
             this.redirApi.close();
-        }
-        File dbfile = new File(TEST_DB_FILENAME + ".h2.db");
-
-        if (!dbfile.delete()) {
-            throw new IllegalStateException("Failed to delete database file : " + dbfile.getAbsolutePath());
-        }
-
-        File tracefile = new File(TEST_DB_FILENAME + ".trace.db");
-        if (tracefile.exists() && !tracefile.delete()) {
-            throw new IllegalStateException("Failed to delete trace file : " + tracefile.getAbsolutePath());
         }
     }
 
@@ -301,11 +292,11 @@ public class OSGiIntegrationTest {
     public void verifyApiResponds() throws Exception {
 
         // Act.
-        SdnRedirectionApi redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
-        InspectionHookElement noSuchHook = redirApi.getInspectionHook("No shuch hook");
+        this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
+        InspectionHookElement noSuchHook = this.redirApi.getInspectionHook("No shuch hook");
 
         // Assert.
         assertNull(noSuchHook);
-        assertTrue(redirApi instanceof NeutronSfcSdnRedirectionApi);
+        assertTrue(this.redirApi instanceof NeutronSfcSdnRedirectionApi);
     }
 }
