@@ -24,7 +24,7 @@ import org.osc.controller.nsfc.entities.NetworkElementEntity;
 import org.osc.controller.nsfc.entities.PortPairGroupEntity;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
 
-class NeutronSfcSdnRedirectionApiTestData {
+class TestData {
 
     private static final String EADDR2_STR = "192.168.0.12";
 
