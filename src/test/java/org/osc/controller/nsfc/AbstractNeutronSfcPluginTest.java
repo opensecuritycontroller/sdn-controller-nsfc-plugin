@@ -29,7 +29,7 @@ import org.mockito.Mock;
 import org.osc.controller.nsfc.entities.InspectionHookEntity;
 import org.osc.controller.nsfc.entities.InspectionPortEntity;
 
-public class AbstractNeutronSfcPluginTest {
+public abstract class AbstractNeutronSfcPluginTest {
 
     @Mock(answer = Answers.CALLS_REAL_METHODS)
     protected TestTransactionControl txControl;
@@ -37,7 +37,7 @@ public class AbstractNeutronSfcPluginTest {
     protected EntityManager em;
 
     @Rule
-    protected ExpectedException exception = ExpectedException.none();
+    public ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setup() {

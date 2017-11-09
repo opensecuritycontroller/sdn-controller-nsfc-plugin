@@ -22,12 +22,12 @@ import static org.osc.controller.nsfc.TestData.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.osc.controller.nsfc.entities.InspectionHookEntity;
 import org.osc.controller.nsfc.entities.InspectionPortEntity;
 import org.osc.sdk.controller.element.InspectionHookElement;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(PowerMockRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class HibernateSetupTest extends AbstractNeutronSfcPluginTest {
 
     @Test
