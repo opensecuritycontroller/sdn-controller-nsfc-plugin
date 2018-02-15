@@ -16,8 +16,13 @@
  *******************************************************************************/
 package org.osc.controller.nsfc.utils;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -25,6 +30,10 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.openstack4j.api.OSClient.OSClientV3;
+import org.openstack4j.model.network.Port;
+import org.openstack4j.model.network.ext.PortChain;
+import org.openstack4j.model.network.ext.PortPairGroup;
 import org.osc.controller.nsfc.entities.InspectionHookEntity;
 import org.osc.controller.nsfc.entities.InspectionPortEntity;
 import org.osc.controller.nsfc.entities.NetworkElementEntity;
@@ -43,10 +52,12 @@ public class RedirectionApiUtils {
 
     private TransactionControl txControl;
     private EntityManager em;
+    private OSClientV3 osClient;
 
-    public RedirectionApiUtils(EntityManager em, TransactionControl txControl) {
+    public RedirectionApiUtils(EntityManager em, TransactionControl txControl, OSClientV3 osClient) {
         this.em = em;
         this.txControl = txControl;
+        this.osClient = osClient;
     }
 
     private NetworkElementEntity makeNetworkElementEntity(NetworkElement networkElement) {
@@ -96,9 +107,12 @@ public class RedirectionApiUtils {
         return retVal;
     }
 
-    public PortPairGroupEntity findByPortPairgroupId(String ppgId) {
-
+    public PortPairGroupEntity findPPGEntityByPortPairgroupId(String ppgId) {
         return this.txControl.required(() -> this.em.find(PortPairGroupEntity.class, ppgId));
+    }
+
+    public PortPairGroup findByPortPairgroupId(String ppgId) {
+        return this.osClient.sfc().portpairgroups().get(ppgId);
     }
 
     public void removePortPairGroup(String ppgId) {
@@ -220,12 +234,50 @@ public class RedirectionApiUtils {
         });
     }
 
+    public NetworkElementEntity retrieveNetworkElementFromOS(String portId, String portPairId) {
+        if (portId == null) {
+            return null;
+        }
+
+        Port port = this.osClient.networking().port().get(portId);
+
+        if (port == null) {
+            LOG.error("Port {} not found on openstack {}", portId, this.osClient.getEndpoint());
+            return null;
+        }
+
+        List<String> ips = emptyList();
+        if (port.getFixedIps() != null) {
+            ips = port.getFixedIps().stream().map(ip -> ip.getIpAddress()).collect(Collectors.toList());
+        }
+
+        return new NetworkElementEntity(port.getId(), ips, singletonList(port.getMacAddress()), portPairId);
+    }
+
+    public void validatePPGList(List<NetworkElement> portPairGroups) {
+        List<? extends PortChain> portChains = this.osClient.sfc().portchains().list();
+
+        for (NetworkElement ne : portPairGroups) {
+            throwExceptionIfNullElementAndId(ne, "Port Pair Group Id");
+            PortPairGroup ppg = findByPortPairgroupId(ne.getElementId());
+            throwExceptionIfCannotFindById(ppg, "Port Pair Group", ne.getElementId());
+
+            Optional<? extends PortChain> pcMaybe = portChains.stream().filter(pc -> pc.getPortPairGroups().contains(ppg.getId()))
+                                                    .findFirst();
+            if (pcMaybe.isPresent()) {
+                throw new IllegalArgumentException(
+                        String.format("Port Pair Group Id %s is already chained to SFC Id : %s ", ne.getElementId(),
+                                pcMaybe.get().getId()));
+            }
+        }
+    }
+
     public List<PortPairGroupEntity> validateAndAdd(List<NetworkElement> portPairGroups, ServiceFunctionChainEntity sfc) {
         List<PortPairGroupEntity> ppgList = new ArrayList<>();
 
         for (NetworkElement ne : portPairGroups) {
             throwExceptionIfNullElementAndId(ne, "Port Pair Group Id");
-            PortPairGroupEntity ppg = findByPortPairgroupId(ne.getElementId());
+            PortPairGroupEntity ppg = findPPGEntityByPortPairgroupId(ne.getElementId());
             throwExceptionIfCannotFindById(ppg, "Port Pair Group", ne.getElementId());
             if (ppg.getServiceFunctionChain() != null) {
                 throw new IllegalArgumentException(
@@ -251,6 +303,29 @@ public class RedirectionApiUtils {
         });
         sfc.getPortPairGroups().clear();
     }
+
+    /**
+     * TODO placeholder method while transitioning to non-db implementation
+     *
+     * Throw exception message in the format "null passed for 'type'!"
+     */
+    public void throwExceptionIfNull(Object object, Class<?> clazz) {
+        throwExceptionIfNull(object, clazz.getName());
+    }
+
+    /**
+    * TODO placeholder method while transitioning to non-db implementation
+    *
+    * Throw exception message in the format "null passed for 'type'!"
+    */
+   public void throwExceptionIfNull(Object object, String type) {
+       if (object == null) {
+           String msg = String.format("null passed for %s !", type);
+           LOG.error(msg);
+           throw new IllegalArgumentException(msg);
+       }
+   }
+
 
     /**
      * Throw exception message in the format "null passed for 'type'!"
