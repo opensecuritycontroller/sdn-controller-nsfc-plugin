@@ -16,16 +16,10 @@
  *******************************************************************************/
 package org.osc.controller.nsfc;
 
-import static org.junit.Assert.*;
-import static org.osc.controller.nsfc.TestData.*;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.osc.controller.nsfc.entities.InspectionHookEntity;
-import org.osc.controller.nsfc.entities.InspectionPortEntity;
-import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
 import org.osc.controller.nsfc.utils.RedirectionApiUtils;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -37,60 +31,11 @@ public class RedirectionApiUtilsTest extends AbstractNeutronSfcPluginTest {
     @Override
     public void setup() throws Exception {
         super.setup();
-        this.utils = new RedirectionApiUtils(this.em, this.txControl, null);
-    }
-
-    @Test
-    public void testUtils_InspectionPortByNetworkElements_Succeeds() throws Exception {
-        // Arrange.
-        persistInspectionPort();
-
-        // Act/
-        InspectionPortEntity foundPort = this.utils.findInspectionPortByNetworkElements(ingress, egress);
-
-        // Assert.
-        assertNotNull(foundPort);
-        assertEquals(inspectionPort.getElementId(), foundPort.getElementId());
-    }
-
-    @Test
-    public void testUtils_InspHookByInspectedAndPort_Succeeds() throws Exception {
-        // Arrange
-        persistInspectionHook();
-
-        // Act.
-        InspectionHookEntity foundIH = this.txControl.required(() -> {
-            ServiceFunctionChainEntity tmpSfc = this.em.find(ServiceFunctionChainEntity.class,
-                    sfc.getElementId());
-
-            InspectionHookEntity ihe = this.utils.findInspHookByInspectedAndPort(inspected, tmpSfc);
-
-            assertNotNull(ihe);
-            assertEquals(inspectionHook.getHookId(), ihe.getHookId());
-            return ihe;
-        });
-
-        // Assert.
-        assertEquals(foundIH.getHookId(), inspectionHook.getHookId());
-        assertEquals(foundIH.getServiceFunctionChain().getElementId(), sfc.getElementId());
-        assertEquals(foundIH.getInspectedPort().getElementId(), inspected.getElementId());
-
+        this.utils = new RedirectionApiUtils(null);
     }
 
     @Test
     public void testUtils_RemoveSingleInspectionHook_Succeeds() throws Exception {
-        // Arrange.
-        persistInspectionHook();
-
-        // Act.
-        this.utils.removeSingleInspectionHook(inspectionHook.getHookId());
-
-        // Assert.
-        InspectionHookEntity inspectionHookEntity = this.txControl.required(() -> {
-            InspectionHookEntity tmpInspectionHook = this.em.find(InspectionHookEntity.class, inspectionHook.getHookId());
-            return tmpInspectionHook;
-        });
-
-        assertNull(inspectionHookEntity);
+        // TODO (Dmitry) Add unit tests
     }
 }
