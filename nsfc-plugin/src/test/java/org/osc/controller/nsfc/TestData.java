@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.networking.PortService;
@@ -37,19 +38,15 @@ import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
 import org.openstack4j.model.network.options.PortListOptions;
-import org.osc.controller.nsfc.entities.InspectionHookEntity;
-import org.osc.controller.nsfc.entities.InspectionPortEntity;
-import org.osc.controller.nsfc.entities.NetworkElementEntity;
-import org.osc.controller.nsfc.entities.PortPairGroupEntity;
-import org.osc.controller.nsfc.entities.ServiceFunctionChainEntity;
+import org.osc.controller.nsfc.entities.FlowClassifierElement;
+import org.osc.controller.nsfc.entities.NetworkElementImpl;
+import org.osc.controller.nsfc.entities.PortPairElement;
+import org.osc.controller.nsfc.entities.PortPairGroupElement;
+import org.osc.controller.nsfc.entities.ServiceFunctionChainElement;
 
 class TestData {
 
-    private static final String EADDR2_STR = "192.168.0.12";
-
     private static final String EADDR1_STR = "192.168.0.11";
-
-    private static final String IADDR2_STR = "10.4.3.2";
 
     private static final String IADDR1_STR = "10.4.3.1";
 
@@ -59,58 +56,69 @@ class TestData {
 
     private static final String IMAC1_STR = "ff:ff:aa:bb:cc:01";
 
-    private static final String IMAC2_STR = "ff:ff:aa:bb:cc:02";
-
     private static final String INSPMAC1_STR = "aa:aa:aa:bb:cc:01";
 
-    public static InspectionHookEntity inspectionHook;
-    public static InspectionPortEntity inspectionPort;
-    public static PortPairGroupEntity ppg;
-    public static ServiceFunctionChainEntity sfc;
+    private static final String INSPADDR_STR = "10.4.5.6";
 
-    public static NetworkElementEntity ingress;
-    public static NetworkElementEntity egress;
-    public static NetworkElementEntity inspected;
+    private static final Random ID_GENERATOR = new Random(System.currentTimeMillis());
+
+    public static FlowClassifierElement inspectionHook;
+    public static PortPairElement inspectionPort;
+    public static PortPairGroupElement ppgElement;
+    public static ServiceFunctionChainElement sfc;
+
+    public static NetworkElementImpl ingressPortElement;
+    public static NetworkElementImpl egressPortElement;
+    public static NetworkElementImpl inspected;
 
     public static PortChain portChain;
     public static PortPair portPair;
     public static PortPairGroup portPairGroup;
+    public static Port ingressPort;
+    public static Port egressPort;
 
-    public static PortService portService = new MockPortService();
-    public static PortChainService portChainService = new MockPortChainService();
-    public static PortPairService portPairService = new MockPortPairService();
-    public static PortPairGroupService portPairGroupService = new MockPortPairGroupService();
-    public static FlowClassifierService flowClassifierService = new MockFlowClassifierService();
+    public static PortService portService;
+    public static PortChainService portChainService;
+    public static PortPairService portPairService;
+    public static PortPairGroupService portPairGroupService;
+    public static FlowClassifierService flowClassifierService;
 
     @SuppressWarnings("unchecked")
     public static void setupDataObjects() {
-        ingress = new NetworkElementEntity();
-        ingress.setElementId(IMAC1_STR + IMAC1_STR);
-        ingress.setMacAddresses(asList(IMAC1_STR, IMAC2_STR));
-        ingress.setPortIPs(asList(IADDR1_STR, IADDR2_STR));
+        ingressPortElement = new NetworkElementImpl();
+        ingressPortElement.setElementId(IMAC1_STR + IMAC1_STR);
+        ingressPortElement.setMacAddresses(asList(IMAC1_STR));
+        ingressPortElement.setPortIPs(asList(IADDR1_STR));
 
-        egress = new NetworkElementEntity();
-        egress.setElementId(EMAC1_STR + EMAC1_STR);
-        egress.setMacAddresses(asList(EMAC1_STR, EMAC2_STR));
-        egress.setPortIPs(asList(EADDR1_STR, EADDR2_STR));
+        egressPortElement = new NetworkElementImpl();
+        egressPortElement.setElementId(EMAC1_STR + EMAC1_STR);
+        egressPortElement.setMacAddresses(asList(EMAC1_STR));
+        egressPortElement.setPortIPs(asList(EADDR1_STR));
 
-        inspected = new NetworkElementEntity();
+        inspected = new NetworkElementImpl();
         inspected.setElementId("iNsPeCtEdPoRt");
         inspected.setMacAddresses(asList(INSPMAC1_STR));
+        inspected.setPortIPs(asList(INSPADDR_STR));
 
-        ppg = new PortPairGroupEntity();
+        ppgElement = new PortPairGroupElement();
 
-        inspectionPort = new InspectionPortEntity();
-        inspectionPort.setIngressPort(ingress);
-        inspectionPort.setEgressPort(egress);
+        inspectionPort = new PortPairElement();
+        inspectionPort.setIngressPort(ingressPortElement);
+        inspectionPort.setEgressPort(egressPortElement);
 
-        sfc = new ServiceFunctionChainEntity();
+        sfc = new ServiceFunctionChainElement();
 
-        inspectionHook = new InspectionHookEntity(inspected, sfc);
+        inspectionHook = new FlowClassifierElement(null, inspected, sfc);
 
         portChain = Builders.portChain().build();
         portPair = Builders.portPair().build();
         portPairGroup = Builders.portPairGroup().build();
+
+        portService = new MockPortService();
+        portChainService = new MockPortChainService();
+        portPairService = new MockPortPairService();
+        portPairGroupService = new MockPortPairGroupService();
+        flowClassifierService = new MockFlowClassifierService();
     }
 
     private static class CRUDMockService<T extends org.openstack4j.model.common.Resource> {
@@ -130,7 +138,7 @@ class TestData {
         public T create(T object) {
             String id;
             do {
-				id = "" + System.currentTimeMillis();
+				id = ID_GENERATOR.nextLong() + "";
 			} while (this.dataObjects.keySet().contains(id));
 
             object.setId(id);

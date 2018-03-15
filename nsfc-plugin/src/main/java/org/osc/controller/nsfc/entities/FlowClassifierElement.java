@@ -21,18 +21,23 @@ import org.osc.sdk.controller.TagEncapsulationType;
 import org.osc.sdk.controller.element.InspectionHookElement;
 import org.osc.sdk.controller.element.InspectionPortElement;
 
-public class InspectionHookEntity implements InspectionHookElement {
+public class FlowClassifierElement implements InspectionHookElement {
 
     private String hookId;
 
-    private NetworkElementEntity inspectedPort;
+    private NetworkElementImpl inspectedPort;
 
-    private ServiceFunctionChainEntity serviceFunctionChain;
+    private ServiceFunctionChainElement serviceFunctionChain;
 
-    InspectionHookEntity() {
+    FlowClassifierElement() {
     }
 
-    public InspectionHookEntity(NetworkElementEntity inspectedPort, ServiceFunctionChainEntity serviceFunctionChain) {
+    public FlowClassifierElement(String hookId) {
+        this.hookId = hookId;
+    }
+
+    public FlowClassifierElement(String hookId, NetworkElementImpl inspectedPort, ServiceFunctionChainElement serviceFunctionChain) {
+        this.hookId = hookId;
         this.inspectedPort = inspectedPort;
         this.serviceFunctionChain = serviceFunctionChain;
     }
@@ -47,19 +52,15 @@ public class InspectionHookEntity implements InspectionHookElement {
     }
 
     @Override
-    public NetworkElementEntity getInspectedPort() {
+    public NetworkElementImpl getInspectedPort() {
         return this.inspectedPort;
     }
 
-    public void setInspectedPort(NetworkElementEntity inspectedPort) {
-        this.inspectedPort = inspectedPort;
-    }
-
-    public ServiceFunctionChainEntity getServiceFunctionChain() {
+    public ServiceFunctionChainElement getServiceFunctionChain() {
         return this.serviceFunctionChain;
     }
 
-    public void setServiceFunctionChain(ServiceFunctionChainEntity serviceFunctionChain) {
+    public void setServiceFunctionChain(ServiceFunctionChainElement serviceFunctionChain) {
         this.serviceFunctionChain = serviceFunctionChain;
     }
 
@@ -85,7 +86,7 @@ public class InspectionHookEntity implements InspectionHookElement {
 
     @Override
     public String toString() {
-        return "InspectionHookEntity [hookId=" + this.hookId + ", inspectedPort=" + this.inspectedPort
+        return "FlwoClassifierElement [hookId=" + this.hookId + ", inspectedPort=" + this.inspectedPort
                 + ", serviceFunctionChain=" + this.serviceFunctionChain + "]";
     }
 

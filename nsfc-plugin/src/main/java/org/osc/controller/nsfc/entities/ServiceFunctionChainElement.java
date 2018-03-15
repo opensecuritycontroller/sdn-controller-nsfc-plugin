@@ -24,18 +24,18 @@ import java.util.Set;
 import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 
-public class ServiceFunctionChainEntity implements NetworkElement, InspectionPortElement {
+public class ServiceFunctionChainElement implements NetworkElement, InspectionPortElement {
 
     private String elementId;
 
-    private List<PortPairGroupEntity> portPairGroups = new ArrayList<>();
+    private List<PortPairGroupElement> portPairGroups = new ArrayList<>();
 
-    private Set<InspectionHookEntity> inspectionHooks = new HashSet<>();
+    private Set<FlowClassifierElement> inspectionHooks = new HashSet<>();
 
-    public ServiceFunctionChainEntity() {
+    public ServiceFunctionChainElement() {
     }
 
-    public ServiceFunctionChainEntity(String elementId) {
+    public ServiceFunctionChainElement(String elementId) {
         super();
         this.elementId = elementId;
     }
@@ -45,21 +45,21 @@ public class ServiceFunctionChainEntity implements NetworkElement, InspectionPor
         return this.elementId;
     }
 
-    public List<PortPairGroupEntity> getPortPairGroups() {
+    public List<PortPairGroupElement> getPortPairGroups() {
         return this.portPairGroups;
     }
 
-    public void setPortPairGroups(List<PortPairGroupEntity> portPairGroups) {
+    public void setPortPairGroups(List<PortPairGroupElement> portPairGroups) {
         this.portPairGroups = portPairGroups;
     }
 
-    public Set<InspectionHookEntity> getInspectionHooks() {
+    public Set<FlowClassifierElement> getInspectionHooks() {
         return this.inspectionHooks;
     }
 
     @Override
     public String toString() {
-        return "ServiceFunctionChainEntity [elementId=" + this.elementId + ", portPairGroups=" + this.portPairGroups + "]";
+        return "ServiceFunctionChainElement [elementId=" + this.elementId + ", portPairGroups=" + this.portPairGroups + "]";
     }
 
     @Override
