@@ -19,16 +19,14 @@ package org.osc.controller.nsfc.utils;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
-import static org.osc.controller.nsfc.api.NeutronSfcSdnRedirectionApi.KEY_HOOK_ID;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.openstack4j.api.Builders;
@@ -37,11 +35,11 @@ import org.openstack4j.model.network.ext.FlowClassifier;
 import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
-import org.openstack4j.model.network.options.PortListOptions;
 import org.osc.controller.nsfc.entities.NetworkElementImpl;
 import org.osc.controller.nsfc.entities.PortPairElement;
 import org.osc.controller.nsfc.entities.PortPairGroupElement;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainElement;
+import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +64,7 @@ public class RedirectionApiUtils {
         return new NetworkElementImpl(port.getId(), singletonList(port.getMacAddress()), ips, parentId);
     }
 
-    private PortPairElement fetchPortPairWithChildDepends(PortPair portPair) {
+    private PortPairElement fetchPortPairElementWithChildDepends(PortPair portPair) {
         checkArgument(portPair != null, "null passed for %s !", "Port Pair");
 
         Port ingressPort = portPair.getIngressId() != null ? this.osCalls.getPort(portPair.getIngressId())
@@ -101,7 +99,7 @@ public class RedirectionApiUtils {
 
             for (PortPair portPair : portPairs) {
                 try {
-                    PortPairElement portPairElement = fetchPortPairWithChildDepends(portPair);
+                    PortPairElement portPairElement = fetchPortPairElementWithChildDepends(portPair);
                     retVal.getPortPairs().add(portPairElement);
                     portPairElement.setPortPairGroup(retVal);
                 } catch (IllegalArgumentException e) {
@@ -141,20 +139,7 @@ public class RedirectionApiUtils {
     }
 
     public Port fetchProtectedPort(FlowClassifier flowClassifier) {
-        String ip = flowClassifier.getDestinationIpPrefix();
-
-        if (ip != null && ip.matches("^.*/32$")) {
-            ip = ip.substring(0, ip.length() - 3);
-        }
-
-        PortListOptions options = PortListOptions.create().tenantId(flowClassifier.getTenantId());
-        options.getOptions().put("ip_address", ip);
-
-        List<? extends Port> ports = this.osCalls.listPorts();
-        Port port = ports.stream().filter(p -> p.getProfile() != null
-                                            && flowClassifier.getId().equals(p.getProfile().get(KEY_HOOK_ID)))
-                          .findFirst().orElse(null);
-        return port;
+        return this.osCalls.getPort(flowClassifier.getLogicalDestinationPort());
     }
 
     /**
@@ -164,7 +149,7 @@ public class RedirectionApiUtils {
      *
      * @return PortPair
      */
-    public PortPair fetchInspectionPortByNetworkElements(NetworkElement ingress, NetworkElement egress) {
+    public PortPair fetchPortPairByNetworkElements(NetworkElement ingress, NetworkElement egress) {
         String ingressId = ingress != null ? ingress.getElementId() : null;
         String egressId = egress != null ? egress.getElementId() : null;
 
@@ -175,6 +160,26 @@ public class RedirectionApiUtils {
                                             && Objects.equals(egressId, pp.getEgressId()))
                         .findFirst()
                         .orElse(null);
+    }
+
+    public PortPair fetchPortPairForInspectionPort(InspectionPortElement inspectionPort) {
+        String portPairId = inspectionPort.getElementId();
+        PortPair portPair = null;
+
+        if (portPairId != null) {
+            portPair = this.osCalls.getPortPair(portPairId);
+        }
+
+        if (portPair == null) {
+            LOG.warn("Failed to retrieve Port Pair by id! Trying by ingress and egress " + inspectionPort);
+
+            NetworkElement ingress = inspectionPort.getIngressPort();
+            NetworkElement egress = inspectionPort.getEgressPort();
+
+            portPair = fetchPortPairByNetworkElements(ingress, egress);
+        }
+
+        return portPair;
     }
 
     public PortPairGroup fetchContainingPortPairGroup(String portPairId) {
@@ -202,71 +207,13 @@ public class RedirectionApiUtils {
         return pcOpt.orElse(null);
     }
 
-    /**
-     * Assumes argument is not null
-     */
-    public FlowClassifier fetchInspHookByInspectedPort(NetworkElement inspected) {
-        LOG.info("Finding Flow Classifiers for inspected port {}", inspected);
-
-        Port inspectedPort  = this.osCalls.getPort(inspected.getElementId());
-
-        if (inspectedPort == null) {
-            throw new IllegalArgumentException(String.format("Flow Classifier %s does not exist!", inspected.getElementId()));
-        }
-
-        if (inspectedPort.getProfile() == null || inspectedPort.getProfile().get(KEY_HOOK_ID) == null) {
-            LOG.warn("No Flow Classifier for inspected port {}", inspected.getElementId());
-            return null;
-        }
-
-        String hookId = (String) inspectedPort.getProfile().get(KEY_HOOK_ID);
-        FlowClassifier flowClassifier = this.osCalls.getFlowClassifier(hookId);
-
-        if (flowClassifier == null) {
-            setHookOnPort(inspectedPort.getId(), null);
-            LOG.warn("Flow Classifier {} for inspected port {} no longer exists!",
-                     hookId, inspected.getElementId());
-            return null;
-        }
-
-        return flowClassifier;
-    }
-
-    /**
-     *
-     * @param port
-     * @param hookId set to null to un-hook
-     * @return modified port
-     */
-    public void setHookOnPort(String portId, String hookId) {
-        Port port = this.osCalls.getPort(portId);
-
-        if (port == null) {
-            return;
-        }
-
-        Map<String, Object> profile = new HashMap<>();
-        if (hookId == null) {
-            profile.remove(KEY_HOOK_ID);
-        } else {
-            profile.put(KEY_HOOK_ID, hookId);
-        }
-
-        port = port.toBuilder().profile(profile).build();
-        this.osCalls.updatePort(port);
-    }
-
-    public FlowClassifier buildFlowClassifier(String inspectedPortIp, ServiceFunctionChainElement sfcElement) {
+    public FlowClassifier buildFlowClassifier(String inspectedPortId) {
         FlowClassifier flowClassifier;
-        String sourcePortId = sfcElement.getPortPairGroups().get(0).getPortPairs().get(0).getIngressPort().getElementId();
-        int nGroups = sfcElement.getPortPairGroups().size();
-        String destPortId = sfcElement.getPortPairGroups().get(nGroups - 1).getPortPairs().get(0).getEgressPort().getElementId();
 
         flowClassifier = Builders.flowClassifier()
                              .description("Flow Classifier created by OSC")
-                             .destinationIpPrefix(inspectedPortIp)
-                             .logicalSourcePort(sourcePortId)
-                             .logicalDestinationPort(destPortId)
+                             .name("OSCFlowClassifier-" + UUID.randomUUID().toString().substring(0, 8))
+                             .logicalDestinationPort(inspectedPortId)
                              .build();
         return flowClassifier;
     }

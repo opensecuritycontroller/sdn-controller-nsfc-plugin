@@ -16,171 +16,38 @@
  *******************************************************************************/
 package org.osc.controller.nsfc;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
 import static org.ops4j.pax.exam.CoreOptions.*;
-import static org.osc.controller.nsfc.api.NeutronSfcSdnRedirectionApi.KEY_HOOK_ID;
-import static org.osc.sdk.controller.FailurePolicyType.NA;
-import static org.osc.sdk.controller.TagEncapsulationType.VLAN;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 
-import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.openstack4j.api.Builders;
-import org.openstack4j.api.OSClient.OSClientV3;
-import org.openstack4j.api.client.IOSClientBuilder.V3;
-import org.openstack4j.api.exceptions.ClientResponseException;
-import org.openstack4j.model.common.Identifier;
-import org.openstack4j.model.network.Port;
-import org.openstack4j.model.network.ext.FlowClassifier;
-import org.openstack4j.model.network.ext.PortChain;
-import org.openstack4j.model.network.ext.PortPair;
-import org.openstack4j.model.network.ext.PortPairGroup;
-import org.openstack4j.openstack.OSFactory;
+import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.ops4j.pax.exam.util.PathUtils;
-import org.osc.controller.nsfc.api.NeutronSfcSdnRedirectionApi;
-import org.osc.controller.nsfc.entities.NetworkElementImpl;
-import org.osc.controller.nsfc.entities.PortPairElement;
-import org.osc.controller.nsfc.entities.ServiceFunctionChainElement;
+import org.osc.controller.nsfc.api.NeutronSfcSdnControllerApi;
 import org.osc.sdk.controller.api.SdnControllerApi;
-import org.osc.sdk.controller.api.SdnRedirectionApi;
-import org.osc.sdk.controller.element.Element;
-import org.osc.sdk.controller.element.InspectionHookElement;
-import org.osc.sdk.controller.element.NetworkElement;
-import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osgi.framework.BundleContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
 
-//@RunWith(PaxExam.class)
-//@ExamReactorStrategy(PerClass.class)
+@RunWith(PaxExam.class)
+@ExamReactorStrategy(PerClass.class)
 public class OSGiIntegrationTest {
-
-    private static final Logger LOG = LoggerFactory.getLogger(OSGiIntegrationTest.class);
-
-    private static final String DOMAIN_NAME = "default";
-    private static final String PASSWORD = "admin123";
-    private static final String USERNAME = "admin";
-    private static final String TENANT = "admin";
-    private static final String TEST_CONTROLLER_IP = "10.3.241.221";
-
-    private static final String INGRESS0_ID = "9818a1ae-ee38-43f5-ab0a-e93e3b81d385";
-    private static final String EGRESS0_ID = "73ffe3e4-80f5-4bf3-8a2b-e7e117c797d2";
-
-    private static final String INGRESS0_IP = "192.168.1.76";
-    private static final String EGRESS0_IP = "172.16.0.13";
-
-    private static final String INGRESS0_MAC = "fa:16:3e:ed:90:1b";
-    private static final String EGRESS0_MAC = "fa:16:3e:73:b2:b6";
-
-    private static final String INGRESS1_ID = "c2753288-4a78-4ed6-b591-383fc59f8514";
-    private static final String EGRESS1_ID = "13eeb3ac-ea52-47a7-bc2d-a5f7763d37c0";
-
-    private static final String INGRESS1_IP = "192.168.1.77";
-    private static final String EGRESS1_IP = "172.16.0.11";
-
-    private static final String INGRESS1_MAC = "fa:16:3e:4c:27:49";
-    private static final String EGRESS1_MAC = "fa:16:3e:a9:81:ee";
-
-    private static final String INSPECTED_ID = "5db6a898-956f-424f-8371-abcf7a20aa03";
-    private static final String INSPECTED_IP = "172.16.0.3";
-    private static final String INSPECTED_MAC = "fa:16:3e:f1:01:34";
-
-    // just for verifying stuff
-    private OSClientV3 osClient;
-    private NetworkElementImpl ingressElement0;
-    private NetworkElementImpl egressElement0;
-    private PortPairElement inspectionPortElement0;
-    private NetworkElementImpl ingressElement1;
-    private NetworkElementImpl egressElement1;
-    private PortPairElement inspectionPortElement1;
 
     @Inject
     BundleContext context;
 
-    @Inject
-    SdnControllerApi api;
+    private ServiceTracker<SdnControllerApi, SdnControllerApi> tracker;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    private SdnRedirectionApi redirApi;
-
-    private static final VirtualizationConnectorElement VC =
-            new VirtualizationConnectorElement() {
-
-                @Override
-                public String getName() {
-                    return "dummy";
-                }
-
-                @Override
-                public String getControllerIpAddress() {
-                    return "dummy";                }
-
-                @Override
-                public String getControllerUsername() {
-                    return "dummy";                }
-
-                @Override
-                public String getControllerPassword() {
-                    return "dummy";                }
-
-                @Override
-                public boolean isControllerHttps() {
-                    return false;
-                }
-
-                @Override
-                public String getProviderIpAddress() {
-                    return TEST_CONTROLLER_IP;       }
-
-                @Override
-                public String getProviderUsername() {
-                    return USERNAME;                }
-
-                @Override
-                public String getProviderPassword() {
-                    return PASSWORD;                }
-
-                @Override
-                public String getProviderAdminTenantName() {
-                    return TENANT;                }
-
-                @Override
-                public String getProviderAdminDomainId() {
-                    return DOMAIN_NAME;                }
-
-                @Override
-                public boolean isProviderHttps() {
-                    return false;
-                }
-
-                @Override
-                public Map<String, String> getProviderAttributes() {
-                    return null;
-                }
-
-                @Override
-                public SSLContext getSslContext() {
-                    return null;
-                }
-
-                @Override
-                public TrustManager[] getTruststoreManager() throws Exception {
-                    return null;
-                }
-    };
 
     @org.ops4j.pax.exam.Configuration
     public Option[] config() {
@@ -239,7 +106,7 @@ public class OSGiIntegrationTest {
                     mavenBundle("com.google.guava","guava").versionAsInProject(),
 
                     // Uncomment this line to allow remote debugging
-//                    CoreOptions.vmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1047"),
+                     // CoreOptions.vmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1047"),
 
                     bootClasspathLibrary(mavenBundle("org.apache.geronimo.specs", "geronimo-jta_1.1_spec", "1.1.1"))
                             .beforeFramework(),
@@ -252,233 +119,22 @@ public class OSGiIntegrationTest {
     }
 
     @Before
-    public void setup() {
-        String domain = VC.getProviderAdminDomainId();
-        String username = VC.getProviderUsername();
-        String password = VC.getProviderPassword();
-        String tenantName = VC.getProviderAdminTenantName();
+    public void startup() {
+        // Set up a tracker which only picks up "testing" services
+        this.tracker = new ServiceTracker<SdnControllerApi, SdnControllerApi>(this.context,
+                SdnControllerApi.class, null) {
+            @Override
+            public SdnControllerApi addingService(ServiceReference<SdnControllerApi> ref) {
+                return this.context.getService(ref);
+            }
+        };
 
-        V3 v3 = OSFactory.builderV3()
-                .endpoint("http://" + VC.getProviderIpAddress() + ":5000/v3")
-                .credentials(username, password, Identifier.byName(domain))
-                .scopeToProject(Identifier.byName(tenantName), Identifier.byName(domain));
-
-        this.osClient = v3.authenticate();
-
-        LOG.debug("You should have prepared an opentack with sfc and two servers with two ports each!");
-
-        this.ingressElement0 = new NetworkElementImpl(INGRESS0_ID, asList(INGRESS0_MAC),
-                                                                    asList(INGRESS0_IP), null);
-        this.egressElement0 = new NetworkElementImpl(EGRESS0_ID, asList(EGRESS0_MAC),
-                                                                  asList(EGRESS0_IP), null);
-        this.inspectionPortElement0 = new PortPairElement(null, null, this.ingressElement0, this.egressElement0);
-
-        this.ingressElement1 = new NetworkElementImpl(INGRESS1_ID, asList(INGRESS1_MAC),
-                                                                    asList(INGRESS1_IP), null);
-        this.egressElement1 = new NetworkElementImpl(EGRESS1_ID, asList(EGRESS1_MAC),
-                       asList(EGRESS1_IP), null);
-        this.inspectionPortElement1 = new PortPairElement(null, null, this.ingressElement1, this.egressElement1);
+        this.tracker.open();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        if (this.redirApi != null) {
-            this.redirApi.close();
-        }
-        cleanAllOnOpenstack();
-    }
-
-//  @Test
-    public void verifyApiResponds() throws Exception {
-        // Act.
-        this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
-        InspectionHookElement noSuchHook = this.redirApi.getInspectionHook("No shuch hook");
-
-        // Assert.
-        assertNull(noSuchHook);
-        assertTrue(this.redirApi instanceof NeutronSfcSdnRedirectionApi);
-    }
-
-    // The following test results in
-    // ClientResponseException{message=Port Pair with ingress port 73ffe3e4-80f5-4bf3-8a2b-e7e117c797d2 and
-    // egress port 9818a1ae-ee38-43f5-ab0a-e93e3b81d385 is already used by another Port Pair
-    // 666cedd4-4752-4b18-b4f7-48f553969020., status=400, status-code=BAD_REQUEST}
-//    @Test
-    public void testIdempotent() throws Exception {
-
-        PortPair pp = Builders.portPair().ingressId(INGRESS0_ID).egressId(EGRESS0_ID).build();
-
-        pp = this.osClient.sfc().portpairs().create(pp);
-
-        pp = pp.toBuilder().id(null).projectId(null).build();
-        this.exception.expect(ClientResponseException.class);
-        pp = this.osClient.sfc().portpairs().create(pp);
-    }
-
-//    @Test
-    public void testIdempotentPPG() throws Exception {
-
-        PortPair pp = Builders.portPair().ingressId(INGRESS0_ID).egressId(EGRESS0_ID).build();
-
-        pp = this.osClient.sfc().portpairs().create(pp);
-
-        PortPairGroup ppg = Builders.portPairGroup().portPairs(Arrays.asList(pp.getId())).build();
-        ppg = this.osClient.sfc().portpairgroups().create(ppg);
-        ppg = ppg.toBuilder().id(null).projectId(null).build();
-
-        this.exception.expect(ClientResponseException.class);
-        this.osClient.sfc().portpairgroups().create(ppg);
-    }
-
-//    @Test
-    public void testPortPairsWorkflow() throws Exception {
-        this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
-
-        // TEST CALL
-        Element result0 = this.redirApi.registerInspectionPort(this.inspectionPortElement0);
-
-        assertNotNull(result0);
-        LOG.debug("Success registering inspection port {} (Actual class {})", result0.getElementId(), result0.getClass());
-        this.inspectionPortElement0 = (PortPairElement) result0;
-
-        assertPortPairGroupIsOk(this.inspectionPortElement0);
-        assertIngressEgressOk(this.inspectionPortElement0);
-
-        // same parent
-        this.inspectionPortElement1.setPortPairGroup(this.inspectionPortElement0.getPortPairGroup());
-
-        // TEST CALL
-        Element result1 = this.redirApi.registerInspectionPort(this.inspectionPortElement1);
-
-        assertNotNull(result1);
-        LOG.debug("Success registering inspection port {} (Actual class {})", result1.getElementId(), result1.getClass());
-        this.inspectionPortElement1 = (PortPairElement) result1;
-
-        assertEquals(this.inspectionPortElement0.getParentId(), this.inspectionPortElement1.getParentId());
-        assertPortPairGroupIsOk(this.inspectionPortElement1);
-        assertIngressEgressOk(this.inspectionPortElement0);
-
-        // TEST CALL
-        this.redirApi.removeInspectionPort(this.inspectionPortElement0);
-
-        assertNull(this.osClient.sfc().portpairs().get(this.inspectionPortElement0.getElementId()));
-        assertNotNull(this.osClient.sfc().portpairs().get(this.inspectionPortElement1.getElementId()));
-        assertNotNull(this.osClient.sfc().portpairgroups().get(this.inspectionPortElement0.getParentId()));
-
-        // TEST CALL
-        this.redirApi.removeInspectionPort(this.inspectionPortElement1);
-
-        assertNull(this.osClient.sfc().portpairs().get(this.inspectionPortElement1.getElementId()));
-        assertNull(this.osClient.sfc().portpairgroups().get(this.inspectionPortElement1.getParentId()));
-    }
-
-//    @Test
-    public void testInspectionHooksWorkflow_BothPairsInSamePPG() throws Exception {
-        this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
-
-        Element result0 = this.redirApi.registerInspectionPort(this.inspectionPortElement0);
-        this.inspectionPortElement0 = (PortPairElement) result0;
-
-        // same parent
-        this.inspectionPortElement1.setPortPairGroup(this.inspectionPortElement0.getPortPairGroup());
-
-        Element result1 = this.redirApi.registerInspectionPort(this.inspectionPortElement1);
-        this.inspectionPortElement1 = (PortPairElement) result1;
-
-        // TEST CALL
-        NetworkElement ne = this.redirApi.registerNetworkElement(asList(this.inspectionPortElement0.getPortPairGroup()));
-        ServiceFunctionChainElement sfc = (ServiceFunctionChainElement) ne;
-
-        NetworkElementImpl inspected = new NetworkElementImpl(INSPECTED_ID, asList(INSPECTED_MAC),
-                                                                  asList(INSPECTED_IP), null);
-
-        // TEST CALL
-        String hookId = this.redirApi.installInspectionHook(inspected, sfc, 0L, VLAN, 0L, NA);
-
-        assertNotNull(hookId);
-
-        // TEST CALL
-        InspectionHookElement ih = this.redirApi.getInspectionHook(hookId);
-
-        assertNotNull(ih);
-
-        Port inspectedPortCheck = this.osClient.networking().port().get(INSPECTED_ID);
-        assertNotNull(inspectedPortCheck);
-        assertNotNull(inspectedPortCheck.getProfile());
-        assertEquals(hookId, inspectedPortCheck.getProfile().get(KEY_HOOK_ID));
-
-        String sfcId = ih.getInspectionPort().getElementId();
-        assertEquals(sfc.getElementId(), sfcId);
-
-        ServiceFunctionChainElement sfcElementCheck = (ServiceFunctionChainElement) ih.getInspectionPort();
-        assertEquals(sfc.getElementId(), sfcElementCheck.getElementId());
-        assertNotNull(sfcElementCheck.getInspectionHooks());
-        assertEquals(1, sfcElementCheck.getInspectionHooks().size());
-        assertEquals(hookId, sfcElementCheck.getInspectionHooks().iterator().next().getHookId());
-
-        PortChain portChainCheck = this.osClient.sfc().portchains().get(sfcId);
-        assertNotNull(portChainCheck);
-
-        FlowClassifier flowClassifierCheck = this.osClient.sfc().flowclassifiers().get(hookId);
-        assertNotNull(flowClassifierCheck);
-        assertTrue(portChainCheck.getFlowClassifiers().contains(hookId));
-
-        // TEST CALL
-        this.redirApi.removeInspectionHook(hookId);
-
-        assertNull(this.redirApi.getInspectionHook(hookId));
-        assertNull(this.osClient.sfc().flowclassifiers().get(hookId));
-
-        inspectedPortCheck = this.osClient.networking().port().get(INSPECTED_ID);
-        assertNotNull(inspectedPortCheck);
-        assertFalse(inspectedPortCheck.getProfile() != null
-                           && inspectedPortCheck.getProfile().get(KEY_HOOK_ID) != null);
-
-        portChainCheck = this.osClient.sfc().portchains().get(sfcId);
-        assertFalse(portChainCheck.getFlowClassifiers() != null
-                          && portChainCheck.getFlowClassifiers().contains(hookId));
-
-        // TEST CALL
-        this.redirApi.deleteNetworkElement(sfc);
-        assertNull(this.osClient.sfc().portchains().get(sfc.getElementId()));
-    }
-
-    private void cleanAllOnOpenstack() {
-        List<? extends PortChain> portChains = this.osClient.sfc().portchains().list();
-        List<? extends FlowClassifier> flowClassifiers = this.osClient.sfc().flowclassifiers().list();
-        List<? extends PortPairGroup> portPairGroups = this.osClient.sfc().portpairgroups().list();
-        List<? extends PortPair> portPairs = this.osClient.sfc().portpairs().list();
-
-        for (PortChain pc : portChains) {
-            this.osClient.sfc().portchains().delete(pc.getId());
-        }
-        for (FlowClassifier fc : flowClassifiers) {
-            this.osClient.sfc().flowclassifiers().delete(fc.getId());
-        }
-        for (PortPairGroup ppg : portPairGroups) {
-            this.osClient.sfc().portpairgroups().delete(ppg.getId());
-        }
-        for (PortPair pp : portPairs) {
-            this.osClient.sfc().portpairs().delete(pp.getId());
-        }
-
-        assertEquals("Failed clean port chains!", 0, this.osClient.sfc().portchains().list().size());
-        assertEquals("Failed clean flow classifiers!", 0, this.osClient.sfc().flowclassifiers().list().size());
-        assertEquals("Failed clean port pair groups!", 0, this.osClient.sfc().portpairgroups().list().size());
-        assertEquals("Failed clean port pairs!", 0, this.osClient.sfc().portpairs().list().size());
-    }
-
-    private void assertIngressEgressOk(PortPairElement inspectionPortElement) {
-        PortPair portPairCheck = this.osClient.sfc().portpairs().get(inspectionPortElement.getElementId());
-        assertEquals(inspectionPortElement.getEgressPort().getElementId(), portPairCheck.getEgressId());
-        assertEquals(inspectionPortElement.getEgressPort().getElementId(), portPairCheck.getEgressId());
-    }
-
-    private void assertPortPairGroupIsOk(PortPairElement inspectionPortElement) {
-        assertNotNull(inspectionPortElement.getPortPairGroup());
-        PortPairGroup ppgCheck = this.osClient.sfc().portpairgroups().get(inspectionPortElement.getParentId());
-        assertNotNull(ppgCheck);
-        assertNotNull(ppgCheck.getPortPairs());
-        assertTrue(ppgCheck.getPortPairs().contains(inspectionPortElement.getElementId()));
+    @Test
+    public void verifyApiInjected() throws Exception {
+        SdnControllerApi api = this.tracker.waitForService(5000);
+        Assert.assertTrue(api instanceof NeutronSfcSdnControllerApi);
     }
 }
