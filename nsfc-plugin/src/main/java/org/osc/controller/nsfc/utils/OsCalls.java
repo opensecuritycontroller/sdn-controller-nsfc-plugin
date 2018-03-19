@@ -29,8 +29,12 @@ import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
 import org.openstack4j.model.network.options.PortListOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OsCalls {
+
+    private static final Logger LOG = LoggerFactory.getLogger(OsCalls.class);
 
     private OSClientV3 osClient;
 
@@ -50,7 +54,7 @@ public class OsCalls {
        portChain = portChain.toBuilder().id(null).build();
        portChain = this.osClient.sfc().portchains().create(portChain);
 
-       return fixPortChainCollections(portChain);
+       return initializePortChainCollections(portChain);
    }
 
    public PortPairGroup createPortPairGroup(PortPairGroup portPairGroup) {
@@ -99,7 +103,7 @@ public class OsCalls {
 
    public PortChain getPortChain(String portChainId) {
        PortChain portChain = this.osClient.sfc().portchains().get(portChainId);
-       return fixPortChainCollections(portChain);
+       return initializePortChainCollections(portChain);
    }
 
    public PortPairGroup getPortPairGroup(String portPairGroupId) {
@@ -132,7 +136,7 @@ public class OsCalls {
        portChain = portChain.toBuilder().id(null).projectId(null).chainParameters(null).chainId(null).build();
 
        portChain = this.osClient.sfc().portchains().update(portChainId, portChain);
-       return fixPortChainCollections(portChain);
+       return initializePortChainCollections(portChain);
    }
 
    public PortPairGroup updatePortPairGroup(String portPairGroupId, PortPairGroup portPairGroup) {
@@ -160,26 +164,55 @@ public class OsCalls {
        return this.osClient.networking().port().update(port);
    }
 
-   public ActionResponse deleteFlowClassifier(String flowClassifierId) {
-       return this.osClient.sfc().flowclassifiers().delete(flowClassifierId);
+   public void deleteFlowClassifier(String flowClassifierId) {
+       ActionResponse response = this.osClient.sfc().flowclassifiers().delete(flowClassifierId);
+       if (!response.isSuccess()) {
+           if (response.getCode() == 404) {
+               return;
+           }
+           String msg = String.format("Opentack returns exception deleting port pair group %s: %s", flowClassifierId, response.toString());
+           LOG.error(msg);
+           throw new RuntimeException(msg);
+       }
    }
 
-   public ActionResponse deletePortChain(String portChainId) {
+   public void deletePortChain(String portChainId) {
        ActionResponse response = this.osClient.sfc().portchains().delete(portChainId);
-       return response;
+       if (!response.isSuccess()) {
+           if (response.getCode() == 404) {
+               return;
+           }
+           String msg = String.format("Opentack returns exception deleting port pair group %s: %s", portChainId, response.toString());
+           LOG.error(msg);
+           throw new RuntimeException(msg);
+       }
    }
 
-   public ActionResponse deletePortPairGroup(String portPairGroupId) {
+   public void deletePortPairGroup(String portPairGroupId) {
        ActionResponse response = this.osClient.sfc().portpairgroups().delete(portPairGroupId);
-       return response;
+       if (!response.isSuccess()) {
+           if (response.getCode() == 404) {
+               return;
+           }
+           String msg = String.format("Opentack returns exception deleting port pair group %s: %s", portPairGroupId, response.toString());
+           LOG.error(msg);
+           throw new RuntimeException(msg);
+       }
    }
 
-   public ActionResponse deletePortPair(String portPairId) {
+   public void deletePortPair(String portPairId) {
        ActionResponse response = this.osClient.sfc().portpairs().delete(portPairId);
-       return response;
+       if (!response.isSuccess()) {
+           if (response.getCode() == 404) {
+               return;
+           }
+           String msg = String.format("Opentack returns exception deleting port pair %s: %s", portPairId, response.toString());
+           LOG.error(msg);
+           throw new RuntimeException(msg);
+       }
    }
 
-   private PortChain fixPortChainCollections(PortChain portChain) {
+   private PortChain initializePortChainCollections(PortChain portChain) {
        if (portChain == null) {
            return null;
        }

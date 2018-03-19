@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient.OSClientV3;
-import org.openstack4j.model.common.ActionResponse;
 import org.openstack4j.model.network.Port;
 import org.openstack4j.model.network.ext.FlowClassifier;
 import org.openstack4j.model.network.ext.PortChain;
@@ -308,11 +307,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
             this.osCalls.updatePortChain(portChain.getId(), portChain);
         }
 
-        ActionResponse result = this.osCalls.deleteFlowClassifier(flowClassifier.getId());
-        if (result.getFault() != null) {
-            LOG.error("Error removing flow classifier {}. Response {} ({})", flowClassifier.getId(),
-                      result.getCode(), result.getFault());
-        }
+        this.osCalls.deleteFlowClassifier(flowClassifier.getId());
     }
 
     @Override
@@ -409,12 +404,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         checkArgument(serviceFunctionChain != null && serviceFunctionChain.getElementId() != null,
                       "null passed for %s !", "Service Function Chain Id");
 
-        ActionResponse response = this.osCalls.deletePortChain(serviceFunctionChain.getElementId());
-
-        if (!response.isSuccess()) {
-            throw new Exception("Exception deleting SFC " + serviceFunctionChain.getElementId()
-                        + ". Status " + response.getCode() + "\nMessage:\n" + response.getFault());
-        }
+        this.osCalls.deletePortChain(serviceFunctionChain.getElementId());
     }
 
     @Override

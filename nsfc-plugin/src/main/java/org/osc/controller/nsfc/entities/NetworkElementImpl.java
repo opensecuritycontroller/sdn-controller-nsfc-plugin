@@ -24,7 +24,6 @@ public class NetworkElementImpl implements NetworkElement {
 
     private String elementId;
 
-    // TODO : for SFC functionality
     private String parentId;
 
     private List<String> macAddresses;
