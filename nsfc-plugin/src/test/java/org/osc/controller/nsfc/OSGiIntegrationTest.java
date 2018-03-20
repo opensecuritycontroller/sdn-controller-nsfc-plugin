@@ -65,6 +65,7 @@ public class OSGiIntegrationTest {
                     mavenBundle("com.fasterxml.jackson.core", "jackson-core").versionAsInProject(),
                     mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-base").versionAsInProject(),
                     mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-json-provider").versionAsInProject(),
+                    mavenBundle("com.fasterxml", "classmate").versionAsInProject(),
                     mavenBundle("org.osc.plugin", "nsfc-uber-openstack4j").versionAsInProject(),
 
                     mavenBundle("org.glassfish.jersey.core", "jersey-client").versionAsInProject(),
@@ -91,13 +92,8 @@ public class OSGiIntegrationTest {
                     systemPackage("javax.xml.stream.util;version=1.0"), systemPackage("javax.transaction;version=1.1"),
                     systemPackage("javax.transaction.xa;version=1.1"),
 
-                    mavenBundle("org.apache.servicemix.bundles", "org.apache.servicemix.bundles.antlr")
-                            .versionAsInProject(),
-                    mavenBundle("org.apache.servicemix.bundles", "org.apache.servicemix.bundles.dom4j")
-                            .versionAsInProject(),
                     mavenBundle("org.javassist", "javassist").versionAsInProject(),
 
-                    mavenBundle("com.fasterxml", "classmate").versionAsInProject(),
                     mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
                     mavenBundle("ch.qos.logback", "logback-core").versionAsInProject(),
                     mavenBundle("ch.qos.logback", "logback-classic").versionAsInProject(),

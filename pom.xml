@@ -30,7 +30,6 @@
     </modules>
 
     <properties>
-        <powermock.version>1.6.5</powermock.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
     </properties>

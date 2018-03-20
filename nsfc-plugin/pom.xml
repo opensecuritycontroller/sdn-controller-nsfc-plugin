@@ -29,7 +29,6 @@
     <name>org.osc.plugin:nsfc-plugin</name>
 
     <properties>
-        <powermock.version>1.6.5</powermock.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
     </properties>
@@ -52,6 +51,16 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.osc.api</groupId>
+            <artifactId>sdn-controller-api</artifactId>
+            <version>2.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osc.plugin</groupId>
+            <artifactId>nsfc-uber-openstack4j</artifactId>
+            <version>2.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.25</version>
@@ -63,42 +72,10 @@
             <version>1.2.3</version>
             <scope>runtime</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.osc.api</groupId>
-            <artifactId>sdn-controller-api</artifactId>
-            <version>2.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.osc.plugin</groupId>
-            <artifactId>nsfc-uber-openstack4j</artifactId>
-            <version>2.0.1-SNAPSHOT</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.directory.studio</groupId>
             <artifactId>org.apache.commons.lang</artifactId>
             <version>2.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.antlr</artifactId>
-            <version>2.7.7_5</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.dom4j</artifactId>
-            <version>1.6.1_5</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- An OSGi bundle version of the AOP dependency -->
-        <dependency>
-            <groupId>org.apache.servicemix.bundles</groupId>
-            <artifactId>org.apache.servicemix.bundles.aopalliance</artifactId>
-            <version>1.0_6</version>
-            <scope>runtime</scope>
         </dependency>
         <!-- Declarative Services is used to publish the service at runtime -->
         <dependency>
@@ -155,21 +132,18 @@
             <version>2.22.1</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
             <version>2.11</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
               <groupId>com.fasterxml.jackson.core</groupId>
               <artifactId>jackson-annotations</artifactId>
               <version>2.3.2</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
@@ -182,7 +156,6 @@
             <version>1.5.0</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.ops4j.pax.exam</groupId>
             <artifactId>pax-exam-junit4</artifactId>
@@ -207,7 +180,6 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
-
         <!-- This is the newer version imported by PaxExam -->
         <dependency>
           <groupId>org.hamcrest</groupId>
@@ -233,7 +205,6 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
