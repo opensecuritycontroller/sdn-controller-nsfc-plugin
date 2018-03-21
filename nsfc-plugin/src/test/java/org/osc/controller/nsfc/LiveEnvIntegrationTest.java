@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import static org.osc.sdk.controller.FailurePolicyType.NA;
 import static org.osc.sdk.controller.TagEncapsulationType.VLAN;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -28,9 +29,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient.OSClientV3;
 import org.openstack4j.api.client.IOSClientBuilder.V3;
 import org.openstack4j.model.common.Identifier;
@@ -45,6 +48,7 @@ import org.osc.controller.nsfc.api.NeutronSfcSdnRedirectionApi;
 import org.osc.controller.nsfc.entities.NetworkElementImpl;
 import org.osc.controller.nsfc.entities.PortPairElement;
 import org.osc.controller.nsfc.entities.ServiceFunctionChainElement;
+import org.osc.controller.nsfc.utils.OsCalls;
 import org.osc.sdk.controller.api.SdnControllerApi;
 import org.osc.sdk.controller.api.SdnRedirectionApi;
 import org.osc.sdk.controller.element.Element;
@@ -81,23 +85,23 @@ public class LiveEnvIntegrationTest {
     private static final String TENANT = "admin";
     private static final String TEST_CONTROLLER_IP = "10.3.243.183";
 
-    private static final String INGRESS0_ID = "ec1ca134-db9c-4fdc-8964-2b18851eca1b";
-    private static final String EGRESS0_ID = "ec1ca134-db9c-4fdc-8964-2b18851eca1b";
+    private static final String INGRESS0_ID = "fb2da712-637a-4fb1-a0eb-b5db78639870";
+    private static final String EGRESS0_ID = "fb2da712-637a-4fb1-a0eb-b5db78639870";
 
-    private static final String INGRESS0_IP = "172.16.3.14";
-    private static final String EGRESS0_IP = "172.16.3.14";
+    private static final String INGRESS0_IP = "172.16.3.5";
+    private static final String EGRESS0_IP = "172.16.3.5";
 
-    private static final String INGRESS0_MAC = "fa:16:3e:cb:44:2d";
-    private static final String EGRESS0_MAC = "fa:16:3e:cb:44:2d";
+    private static final String INGRESS0_MAC = "fa:16:3e:a8:01:06";
+    private static final String EGRESS0_MAC = "fa:16:3e:a8:01:06";
 
-    private static final String INGRESS1_ID = "6c47e906-f305-4ba0-9b7f-2b375c166b0d";
-    private static final String EGRESS1_ID = "6c47e906-f305-4ba0-9b7f-2b375c166b0d";
+    private static final String INGRESS1_ID = "e6ebf285-07e2-4de1-aa7f-c65950784f13";
+    private static final String EGRESS1_ID = "e6ebf285-07e2-4de1-aa7f-c65950784f13";
 
     private static final String INGRESS1_IP = "172.16.1.5";
     private static final String EGRESS1_IP = "172.16.1.5";
 
-    private static final String INGRESS1_MAC = "fa:16:3e:d3:84:7e";
-    private static final String EGRESS1_MAC = "fa:16:3e:d3:84:7e";
+    private static final String INGRESS1_MAC = "fa:16:3e:91:80:69";
+    private static final String EGRESS1_MAC = "fa:16:3e:91:80:69";
 
     private static final String INSPECTED_ID = "11e5dd85-b1f7-422d-a822-181351b22aef";
     private static final String INSPECTED_IP = "172.16.3.8";
@@ -338,7 +342,89 @@ public class LiveEnvIntegrationTest {
         assertNull(this.osClient.sfc().portchains().get(sfc.getElementId()));
     }
 
-//    @Test
+    private static final String NONEXISTENT_ID = "11e5aa85-a1a7-555a-a822-181351b22aef";
+
+    //@Test
+    public void attemptMakePortPairFromPortsOnDifferentVMS() {
+        try {
+            PortPair portPair = Builders.portPair().ingressId(INGRESS0_ID).egressId(INSPECTED_ID).build();
+            this.osClient.sfc().portpairs().create(portPair);
+            Assert.fail();
+        } catch (Exception e) {
+            printThrowable(e);
+        }
+    }
+
+    //@Test
+    public void attemptMakePortPairFromPortsWithNonexistentVMS() {
+        PortPair portPair = Builders.portPair().ingressId(INGRESS0_ID).egressId(NONEXISTENT_ID).build();
+        portPair = this.osClient.sfc().portpairs().create(portPair);
+        assertNull(portPair);
+    }
+
+    //@Test
+    public void attemptMakePortPairGroupNonexPortPair() {
+        PortPairGroup portPairGroup = Builders.portPairGroup().name("attemptMakePortPairGroupNonexPortPair").portPairs(Arrays.asList(NONEXISTENT_ID)).build();
+        portPairGroup = this.osClient.sfc().portpairgroups().create(portPairGroup);
+        // Nonexistent port pair works here but not in neutron command line
+    }
+
+    //@Test
+    public void attemptMakePortPairGroupNullPortPair() {
+        PortPairGroup portPairGroup = Builders.portPairGroup().name("attemptMakePortPairGroupNullPortPair").build();
+        portPairGroup = this.osClient.sfc().portpairgroups().create(portPairGroup);
+        // Empty port pair is OK
+    }
+
+    //@Test
+    public void attemptMakePortChainNonexPPG() {
+        PortChain portChain = Builders.portChain().portPairGroups(Arrays.asList(NONEXISTENT_ID)).build();
+        portChain = this.osClient.sfc().portchains().create(portChain);
+        // Nonexistent port pair works here but not in neutron command line
+    }
+
+    //@Test
+    public void attemptMakePortChainNullPPG() {
+        try {
+            PortChain portChain = Builders.portChain().build();
+            portChain = this.osClient.sfc().portchains().create(portChain);
+            Assert.fail();
+        } catch (Exception e) {
+            printThrowable(e);
+        }
+    }
+
+    //@Test
+    public void attemptUpdatePortPairFromPortsOnDifferentVMS() {
+        try {
+            PortPair portPair = Builders.portPair().ingressId(INGRESS0_ID).egressId(INGRESS0_ID).build();
+            portPair = this.osClient.sfc().portpairs().create(portPair);
+            String id = portPair.getId();
+            assertNotNull(id);
+
+            portPair = portPair.toBuilder().egressId(NONEXISTENT_ID).id(null).build();
+            portPair = this.osClient.sfc().portpairs().update(id, portPair);
+            Assert.fail();
+        } catch (Exception e) {
+            printThrowable(e);
+        }
+    }
+
+    //@Test
+    public void tryDeletes() {
+        OsCalls osCalls =  new OsCalls(this.osClient);
+
+        osCalls.deleteFlowClassifier(NONEXISTENT_ID);
+        osCalls.deletePortChain(NONEXISTENT_ID);
+        osCalls.deletePortPair(NONEXISTENT_ID);
+        osCalls.deletePortPairGroup(NONEXISTENT_ID);
+    }
+
+    private void printThrowable(Throwable e) {
+        LOG.error("Received exception: {}: {}", e.getClass(), e.getMessage());
+    }
+
+    //@Test
     public void cleanAllOnOpenstack() {
         List<? extends PortChain> portChains = this.osClient.sfc().portchains().list();
         List<? extends FlowClassifier> flowClassifiers = this.osClient.sfc().flowclassifiers().list();

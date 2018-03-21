@@ -278,13 +278,13 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
                 return;
             }
             currentPortChain.getFlowClassifiers().remove(flowClassifier.getId());
+            this.osCalls.updatePortChain(currentPortChain.getId(), currentPortChain);
         }
 
         if (!providedPortChain.getFlowClassifiers().contains(flowClassifier.getId())) {
             providedPortChain.getFlowClassifiers().add(flowClassifier.getId());
         }
 
-        this.osCalls.updatePortChain(currentPortChain.getId(), currentPortChain);
         this.osCalls.updatePortChain(providedPortChain.getId(), providedPortChain);
     }
 

@@ -17,6 +17,7 @@
 package org.osc.controller.nsfc.utils;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.osc.controller.nsfc.exceptions.NsfcException.Operation.Update;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,8 @@ import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
 import org.openstack4j.model.network.options.PortListOptions;
+import org.osc.controller.nsfc.exceptions.NullObjectReturnedNsfcException;
+import org.osc.controller.nsfc.exceptions.SdnControllerResponseNsfcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +128,17 @@ public class OsCalls {
        // OS won't let us modify some attributes. Must be null on update object
        flowClassifier = flowClassifier.toBuilder().id(null).projectId(null).build();
 
-       return this.osClient.sfc().flowclassifiers().update(flowClassifierId, flowClassifier);
+       try {
+           flowClassifier = this.osClient.sfc().flowclassifiers().update(flowClassifierId, flowClassifier);
+       } catch (Exception e) {
+           throw new SdnControllerResponseNsfcException(Update, FlowClassifier.class);
+       }
+
+       if (flowClassifier == null) {
+           throw new NullObjectReturnedNsfcException(Update, FlowClassifier.class);
+       }
+
+       return flowClassifier;
    }
 
    public PortChain updatePortChain(String portChainId, PortChain portChain) {
@@ -135,7 +148,16 @@ public class OsCalls {
        // OS won't let us modify some attributes. Must be null on update object
        portChain = portChain.toBuilder().id(null).projectId(null).chainParameters(null).chainId(null).build();
 
-       portChain = this.osClient.sfc().portchains().update(portChainId, portChain);
+       try {
+           portChain = this.osClient.sfc().portchains().update(portChainId, portChain);
+       } catch (Exception e) {
+           throw new SdnControllerResponseNsfcException(Update, PortChain.class);
+       }
+
+       if (portChain == null) {
+           throw new NullObjectReturnedNsfcException(Update, PortChain.class);
+       }
+
        return initializePortChainCollections(portChain);
    }
 
@@ -146,7 +168,16 @@ public class OsCalls {
        // OS won't let us modify some attributes. Must be null on update object
        portPairGroup  = portPairGroup.toBuilder().id(null).projectId(null).portPairGroupParameters(null).build();
 
-       portPairGroup = this.osClient.sfc().portpairgroups().update(portPairGroupId, portPairGroup);
+       try {
+           portPairGroup = this.osClient.sfc().portpairgroups().update(portPairGroupId, portPairGroup);
+       } catch (Exception e) {
+           throw new SdnControllerResponseNsfcException(Update, PortPairGroup.class);
+       }
+
+       if (portPairGroup == null) {
+           throw new NullObjectReturnedNsfcException(Update, PortPairGroup.class);
+       }
+
        return portPairGroup;
    }
 
@@ -156,11 +187,31 @@ public class OsCalls {
 
        // OS won't let us modify some attributes. Must be null on update object
        portPair = portPair.toBuilder().id(null).projectId(null).build();
-       portPair = this.osClient.sfc().portpairs().update(portPairId, portPair);
+
+       try {
+           portPair = this.osClient.sfc().portpairs().update(portPairId, portPair);
+       } catch (Exception e) {
+           throw new SdnControllerResponseNsfcException(Update, PortPair.class);
+       }
+
+       if (portPair == null) {
+           throw new NullObjectReturnedNsfcException(Update, PortPair.class);
+       }
+
        return portPair;
    }
 
    public Port updatePort(Port port) {
+       try {
+           port = this.osClient.networking().port().update(port);
+       } catch (Exception e) {
+           throw new SdnControllerResponseNsfcException(Update, Port.class);
+       }
+
+       if (port == null) {
+           throw new NullObjectReturnedNsfcException(Update, Port.class);
+       }
+
        return this.osClient.networking().port().update(port);
    }
 

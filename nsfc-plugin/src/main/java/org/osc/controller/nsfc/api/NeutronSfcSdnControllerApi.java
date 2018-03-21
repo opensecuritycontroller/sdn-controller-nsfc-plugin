@@ -61,6 +61,9 @@ public class NeutronSfcSdnControllerApi implements SdnControllerApi {
 
     @Override
     public SdnRedirectionApi createRedirectionApi(VirtualizationConnectorElement vc, String region) {
+        if (vc == null || vc.getName() == null || vc.getName().length() == 0) {
+            throw new IllegalArgumentException("Non-null VC with non-empty name required!");
+        }
 
         String domain = vc.getProviderAdminDomainId();
         String username = vc.getProviderUsername();
@@ -73,10 +76,6 @@ public class NeutronSfcSdnControllerApi implements SdnControllerApi {
                 .scopeToProject(Identifier.byName(tenantName), Identifier.byName(domain));
 
         OSClientV3 os = v3.authenticate();
-
-        if (vc == null || vc.getName() == null || vc.getName().length() == 0) {
-            throw new IllegalArgumentException("Non-null VC with non-empty name required!");
-        }
 
         return new NeutronSfcSdnRedirectionApi(os);
     }
