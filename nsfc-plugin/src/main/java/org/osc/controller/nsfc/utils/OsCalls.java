@@ -261,7 +261,7 @@ public class OsCalls {
                 if (response.getCode() == 404) {
                     return;
                 }
-                String msg = String.format("Deleting flow classifier %s Response %s %s", flowClassifierId, response.getFault());
+                String msg = String.format("Deleting flow classifier %s Response %d %s", flowClassifierId, response.getCode(), response.getFault());
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -277,7 +277,7 @@ public class OsCalls {
                 if (response.getCode() == 404) {
                     return;
                 }
-                String msg = String.format("Deleting port chain %s Response %s %s", portChainId, response.getFault());
+                String msg = String.format("Deleting port chain %s Response %d %s", portChainId, response.getCode(), response.getFault());
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -293,7 +293,7 @@ public class OsCalls {
                 if (response.getCode() == 404) {
                     return;
                 }
-                String msg = String.format("Deleting port pair %s Response %s %s", portPairGroupId, response.getFault());
+                String msg = String.format("Deleting port pair %s Response %d %s", portPairGroupId, response.getCode(), response.getFault());
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -309,7 +309,7 @@ public class OsCalls {
                 if (response.getCode() == 404) {
                     return;
                 }
-                String msg = String.format("Deleting port pair %s Response %s %s", portPairId, response.getFault());
+                String msg = String.format("Deleting port pair %s Response %d %s", portPairId, response.getCode(), response.getFault());
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }

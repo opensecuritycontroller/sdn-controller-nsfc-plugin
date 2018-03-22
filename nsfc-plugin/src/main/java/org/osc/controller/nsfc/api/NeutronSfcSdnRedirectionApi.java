@@ -134,6 +134,7 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         if (portPairGroup == null) {
             portPairGroup = Builders.portPairGroup()
                     .description("Port Pair Group created by OSC")
+                    .name("OSCPortPairGroup-" + UUID.randomUUID().toString().substring(0, 8))
                     .portPairs(new ArrayList<>())
                     .build();
             portPairGroup.getPortPairs().add(portPair.getId());
