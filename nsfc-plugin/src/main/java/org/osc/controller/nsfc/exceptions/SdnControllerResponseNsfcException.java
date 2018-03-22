@@ -16,8 +16,8 @@ public class SdnControllerResponseNsfcException extends NsfcException {
 
     @Override
     public String getMessage() {
-        return String.format("%s. SDN Controller threw exception %s: %s!", super.getMessage(), getCause().getMessage(),
-                getCause().getClass().getName());
+        return String.format("%s. SDN Controller threw  %s: %s!", super.getMessage(),
+                getCause().getClass().getSimpleName(), getCause().getMessage());
     }
 
 }

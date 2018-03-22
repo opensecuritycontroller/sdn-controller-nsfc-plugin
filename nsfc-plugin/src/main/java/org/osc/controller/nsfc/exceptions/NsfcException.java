@@ -8,7 +8,7 @@ public abstract class NsfcException extends RuntimeException {
     protected final Class<? extends Resource> objectClass;
     protected final Operation operation;
 
-    public enum Operation {Create, Update};
+    public enum Operation {Create, Update, Delete};
 
     public NsfcException(Operation operation, Class<? extends Resource> objectClass) {
         this.objectClass = objectClass;
@@ -23,6 +23,6 @@ public abstract class NsfcException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return String.format("%s %s failed!", this.operation, this.objectClass);
+        return String.format("%s %s failed!", this.operation, this.objectClass.getSimpleName());
     }
 }

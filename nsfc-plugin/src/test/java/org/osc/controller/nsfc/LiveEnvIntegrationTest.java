@@ -36,6 +36,7 @@ import org.junit.rules.ExpectedException;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient.OSClientV3;
 import org.openstack4j.api.client.IOSClientBuilder.V3;
+import org.openstack4j.model.common.ActionResponse;
 import org.openstack4j.model.common.Identifier;
 import org.openstack4j.model.network.Port;
 import org.openstack4j.model.network.ext.FlowClassifier;
@@ -60,20 +61,22 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This test is run against live ocata environment. Username and password should work.
- * The Project (AKA Tenant) should be admin.
- * INGRESS/EGRESS ID's, MAC's and IP's should correspond to pre-created VM's on
- * ocata.
  *
- * Due to certain issues with networking-sfc plugin and openvswitch, we have to make certain temporary concessions.
- * We are not really using the ovs driver. On control node, use 'drivers = dummy' in /etc/neutron/neutron.conf.
- * That's under the [ovs] section.
+ * The name of Project (AKA Tenant) should be admin.
+ *
+ * INGRESS/EGRESS ID's, MAC's and IP's should correspond to pre-created VM's on ocata.
+ *
+ * Due to certain issues with networking-sfc plugin and openvswitch, we have to make certain
+ * temporary concessions. We are not really using the ovs driver. On control node,
+ * use 'drivers = dummy' in /etc/neutron/neutron.conf. That's under the [ovs] section.
  *
  * On the compute node, comment out the "extensions = sfc" line in
  * /etc/neutron/plugins/ml2/openvswitch_agent.ini. Effectively, this turns off hte actual
  * networking_sfc agent and only tests the plugin, making sure the api calls are correct and
- * in correct sequence.
+ * in the correct sequence.
  *
  * See https://docs.openstack.org/networking-sfc/latest/install/index.html
+ *
  */
 public class LiveEnvIntegrationTest {
 
@@ -109,6 +112,7 @@ public class LiveEnvIntegrationTest {
 
     // just for verifying stuff
     private OSClientV3 osClient;
+    private OsCalls osCalls;
     private NetworkElementImpl ingressElement0;
     private NetworkElementImpl egressElement0;
     private PortPairElement inspectionPortElement0;
@@ -202,6 +206,8 @@ public class LiveEnvIntegrationTest {
                 .scopeToProject(Identifier.byName(tenantName), Identifier.byName(domain));
 
         this.osClient = v3.authenticate();
+        this.osCalls = new OsCalls(this.osClient);
+
         this.api =  new NeutronSfcSdnControllerApi();
 
         this.ingressElement0 = new NetworkElementImpl(INGRESS0_ID, asList(INGRESS0_MAC),
@@ -225,7 +231,7 @@ public class LiveEnvIntegrationTest {
         cleanAllOnOpenstack();
     }
 
-//  @Test
+//  //@Test
     public void verifyApiResponds() throws Exception {
         // Act.
         this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
@@ -236,7 +242,7 @@ public class LiveEnvIntegrationTest {
         assertTrue(this.redirApi instanceof NeutronSfcSdnRedirectionApi);
     }
 
-//    @Test
+//    //@Test
     public void testPortPairsWorkflow() throws Exception {
         this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
 
@@ -278,7 +284,7 @@ public class LiveEnvIntegrationTest {
         assertNull(this.osClient.sfc().portpairgroups().get(this.inspectionPortElement1.getParentId()));
     }
 
-//    @Test
+//    //@Test
     public void testInspectionHooksWorkflow_BothPairsInSamePPG() throws Exception {
         this.redirApi = this.api.createRedirectionApi(VC, "DummyRegion");
 
@@ -410,14 +416,44 @@ public class LiveEnvIntegrationTest {
         }
     }
 
-    //@Test
-    public void tryDeletes() {
-        OsCalls osCalls =  new OsCalls(this.osClient);
+    // The following calls simply our assumptions about the REST API
 
-        osCalls.deleteFlowClassifier(NONEXISTENT_ID);
-        osCalls.deletePortChain(NONEXISTENT_ID);
-        osCalls.deletePortPair(NONEXISTENT_ID);
-        osCalls.deletePortPairGroup(NONEXISTENT_ID);
+    //@Test
+    public void deletingNonexistentFlowClassifierThroughWrapperOk() {
+        this.osCalls.deleteFlowClassifier(NONEXISTENT_ID);
+    }
+    //@Test
+    public void deletingNonexistentPortChainThroughWrapperOk() {
+        this.osCalls.deletePortChain(NONEXISTENT_ID);
+    }
+    //@Test
+    public void deletingNonexistentPortPairGroupThroughWrapperOk() {
+        this.osCalls.deletePortPairGroup(NONEXISTENT_ID);
+    }
+    //@Test
+    public void deletingNonexistentPortPairThroughWrapperOk() {
+        this.osCalls.deletePortPair(NONEXISTENT_ID);
+    }
+
+    //@Test
+    public void deleteNonexistentFlowClassifierThroughApi404() {
+        ActionResponse response = this.osClient.sfc().flowclassifiers().delete(NONEXISTENT_ID);
+        assertEquals(404, response.getCode());
+    }
+    //@Test
+    public void deleteNonexistentPortChainThroughApi404() {
+        ActionResponse response = this.osClient.sfc().portchains().delete(NONEXISTENT_ID);
+        assertEquals(404, response.getCode());
+    }
+    //@Test
+    public void deleteNonexistentPortPairGroupThroughApi404() {
+        ActionResponse response = this.osClient.sfc().portpairgroups().delete(NONEXISTENT_ID);
+        assertEquals(404, response.getCode());
+    }
+    //@Test
+    public void deleteNonexistentPortPairThroughApi404() {
+        ActionResponse response = this.osClient.sfc().portpairs().delete(NONEXISTENT_ID);
+        assertEquals(404, response.getCode());
     }
 
     private void printThrowable(Throwable e) {
