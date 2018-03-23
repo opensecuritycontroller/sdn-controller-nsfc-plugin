@@ -29,7 +29,6 @@ import org.openstack4j.model.network.ext.FlowClassifier;
 import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
-import org.openstack4j.model.network.options.PortListOptions;
 import org.osc.controller.nsfc.exceptions.SdnControllerResponseNsfcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,10 +114,6 @@ public class OsCalls {
         return portPair;
     }
 
-    public List<? extends FlowClassifier> listFlowClassifiers() {
-        return this.osClient.sfc().flowclassifiers().list();
-    }
-
     public List<? extends PortPairGroup> listPortPairGroups() {
         return this.osClient.sfc().portpairgroups().list();
     }
@@ -129,14 +124,6 @@ public class OsCalls {
 
     public List<? extends PortChain> listPortChains() {
         return this.osClient.sfc().portchains().list();
-    }
-
-    public List<? extends Port> listPorts() {
-        return this.osClient.networking().port().list();
-    }
-
-    public List<? extends Port> listPorts(PortListOptions options) {
-        return this.osClient.networking().port().list(options);
     }
 
     public FlowClassifier getFlowClassifier(String flowClassifierId) {
@@ -158,26 +145,6 @@ public class OsCalls {
 
     public Port getPort(String portId) {
         return this.osClient.networking().port().get(portId);
-    }
-
-    public FlowClassifier updateFlowClassifier(String flowClassifierId, FlowClassifier flowClassifier) {
-        checkArgument(flowClassifierId != null, "null passed for %s !", "Flow Classifier Id");
-        checkArgument(flowClassifier != null, "null passed for %s !", "Flow Classifier");
-
-        // OS won't let us modify some attributes. Must be null on update object
-        flowClassifier = flowClassifier.toBuilder().id(null).projectId(null).build();
-
-        try {
-            flowClassifier = this.osClient.sfc().flowclassifiers().update(flowClassifierId, flowClassifier);
-        } catch (Exception e) {
-            throw new SdnControllerResponseNsfcException(Update, FlowClassifier.class, e);
-        }
-
-        if (flowClassifier == null) {
-            throw new RuntimeException("Update Flow Classifier operation returned null");
-        }
-
-        return flowClassifier;
     }
 
     public PortChain updatePortChain(String portChainId, PortChain portChain) {
@@ -218,40 +185,6 @@ public class OsCalls {
         }
 
         return portPairGroup;
-    }
-
-    public PortPair updatePortPair(String portPairId, PortPair portPair) {
-        checkArgument(portPairId != null, "null passed for %s !", "Port Pair Id");
-        checkArgument(portPair != null, "null passed for %s !", "Port Pair");
-
-        // OS won't let us modify some attributes. Must be null on update object
-        portPair = portPair.toBuilder().id(null).projectId(null).build();
-
-        try {
-            portPair = this.osClient.sfc().portpairs().update(portPairId, portPair);
-        } catch (Exception e) {
-            throw new SdnControllerResponseNsfcException(Update, PortPair.class, e);
-        }
-
-        if (portPair == null) {
-            throw new RuntimeException("Update Port Pair operation returned null");
-        }
-
-        return portPair;
-    }
-
-    public Port updatePort(Port port) {
-        try {
-            port = this.osClient.networking().port().update(port);
-        } catch (Exception e) {
-            throw new SdnControllerResponseNsfcException(Update, Port.class, e);
-        }
-
-        if (port == null) {
-            throw new RuntimeException("Update Port operation returned null");
-        }
-
-        return this.osClient.networking().port().update(port);
     }
 
     public void deleteFlowClassifier(String flowClassifierId) {
