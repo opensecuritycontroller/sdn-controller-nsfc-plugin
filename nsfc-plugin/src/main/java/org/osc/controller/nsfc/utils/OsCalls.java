@@ -17,7 +17,7 @@
 package org.osc.controller.nsfc.utils;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.osc.controller.nsfc.exceptions.NsfcException.Operation.*;
+import static org.osc.controller.nsfc.exceptions.SdnControllerResponseNsfcException.Operation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -156,12 +156,12 @@ public class OsCalls {
 
         try {
             portChain = this.osClient.sfc().portchains().update(portChainId, portChain);
+            if (portChain == null) {
+                LOG.error("Update Port Chain operation returned null for port chain " + portChainId);
+                throw new RuntimeException("Update Port Chain operation returned null for port chain " + portChainId);
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Update, PortChain.class, e);
-        }
-
-        if (portChain == null) {
-            throw new RuntimeException("Update Port Chain operation returned null");
         }
 
         return initializePortChainCollections(portChain);
@@ -176,14 +176,13 @@ public class OsCalls {
 
         try {
             portPairGroup = this.osClient.sfc().portpairgroups().update(portPairGroupId, portPairGroup);
+            if (portPairGroup == null) {
+                LOG.error("Update Port Pair Group operation returned null for port pair" + portPairGroupId);
+                throw new RuntimeException("Update Port Pair Group operation returned null for port pair" + portPairGroupId);
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Update, PortPairGroup.class, e);
         }
-
-        if (portPairGroup == null) {
-            throw new RuntimeException("Update Port Pair Group operation returned null");
-        }
-
         return portPairGroup;
     }
 
