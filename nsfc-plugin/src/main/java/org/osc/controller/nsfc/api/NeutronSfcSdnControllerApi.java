@@ -75,9 +75,9 @@ public class NeutronSfcSdnControllerApi implements SdnControllerApi {
                 .credentials(username, password, Identifier.byName(domain))
                 .scopeToProject(Identifier.byName(tenantName), Identifier.byName(domain));
 
-        OSClientV3 os = v3.authenticate();
+        OSClientV3 osClient = v3.authenticate();
 
-        return new NeutronSfcSdnRedirectionApi(os);
+        return new NeutronSfcSdnRedirectionApi(osClient);
     }
 
     @Override
