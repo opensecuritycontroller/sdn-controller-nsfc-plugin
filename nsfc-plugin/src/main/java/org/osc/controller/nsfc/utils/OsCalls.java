@@ -30,12 +30,8 @@ import org.openstack4j.model.network.ext.PortChain;
 import org.openstack4j.model.network.ext.PortPair;
 import org.openstack4j.model.network.ext.PortPairGroup;
 import org.osc.controller.nsfc.exceptions.SdnControllerResponseNsfcException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OsCalls {
-
-    private static final Logger LOG = LoggerFactory.getLogger(OsCalls.class);
 
     private OSClientV3 osClient;
 
@@ -50,12 +46,11 @@ public class OsCalls {
 
         try {
             flowClassifier = this.osClient.sfc().flowclassifiers().create(flowClassifier);
+            if (flowClassifier == null) {
+                throw new RuntimeException("Create Flow Classifier operation returned null");
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Create, FlowClassifier.class, e);
-        }
-
-        if (flowClassifier == null) {
-            throw new RuntimeException("Create Flow Classifier operation returned null");
         }
 
         return flowClassifier;
@@ -68,12 +63,11 @@ public class OsCalls {
 
         try {
             portChain = this.osClient.sfc().portchains().create(portChain);
+            if (portChain == null) {
+                throw new RuntimeException("Create Port Chain operation returned null");
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Create, PortChain.class, e);
-        }
-
-        if (portChain == null) {
-            throw new RuntimeException("Create Port Chain operation returned null");
         }
 
         return initializePortChainCollections(portChain);
@@ -85,14 +79,12 @@ public class OsCalls {
 
         try {
             portPairGroup = this.osClient.sfc().portpairgroups().create(portPairGroup);
+            if (portPairGroup == null) {
+                throw new RuntimeException("Create Port Pair Group operation returned null");
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Create, PortPairGroup.class, e);
         }
-
-        if (portPairGroup == null) {
-            throw new RuntimeException("Create Port Pair Group operation returned null");
-        }
-
 
         return portPairGroup;
     }
@@ -103,12 +95,11 @@ public class OsCalls {
 
         try {
             portPair = this.osClient.sfc().portpairs().create(portPair);
+            if (portPair == null) {
+                throw new RuntimeException("Create Port Pair operation returned null");
+            }
         } catch (Exception e) {
             throw new SdnControllerResponseNsfcException(Create, PortPair.class, e);
-        }
-
-        if (portPair == null) {
-            throw new RuntimeException("Create Port Pair operation returned null");
         }
 
         return portPair;
@@ -157,7 +148,6 @@ public class OsCalls {
         try {
             portChain = this.osClient.sfc().portchains().update(portChainId, portChain);
             if (portChain == null) {
-                LOG.error("Update Port Chain operation returned null for port chain " + portChainId);
                 throw new RuntimeException("Update Port Chain operation returned null for port chain " + portChainId);
             }
         } catch (Exception e) {
@@ -177,7 +167,6 @@ public class OsCalls {
         try {
             portPairGroup = this.osClient.sfc().portpairgroups().update(portPairGroupId, portPairGroup);
             if (portPairGroup == null) {
-                LOG.error("Update Port Pair Group operation returned null for port pair" + portPairGroupId);
                 throw new RuntimeException("Update Port Pair Group operation returned null for port pair" + portPairGroupId);
             }
         } catch (Exception e) {
@@ -194,7 +183,6 @@ public class OsCalls {
                     return;
                 }
                 String msg = String.format("Deleting flow classifier %s Response %d %s", flowClassifierId, response.getCode(), response.getFault());
-                LOG.error(msg);
                 throw new RuntimeException(msg);
             }
         } catch (Exception e) {
@@ -210,7 +198,6 @@ public class OsCalls {
                     return;
                 }
                 String msg = String.format("Deleting port chain %s Response %d %s", portChainId, response.getCode(), response.getFault());
-                LOG.error(msg);
                 throw new RuntimeException(msg);
             }
         } catch (Exception e) {
@@ -226,7 +213,6 @@ public class OsCalls {
                     return;
                 }
                 String msg = String.format("Deleting port pair %s Response %d %s", portPairGroupId, response.getCode(), response.getFault());
-                LOG.error(msg);
                 throw new RuntimeException(msg);
             }
         } catch (Exception e) {
@@ -242,7 +228,6 @@ public class OsCalls {
                     return;
                 }
                 String msg = String.format("Deleting port pair %s Response %d %s", portPairId, response.getCode(), response.getFault());
-                LOG.error(msg);
                 throw new RuntimeException(msg);
             }
         } catch (Exception e) {

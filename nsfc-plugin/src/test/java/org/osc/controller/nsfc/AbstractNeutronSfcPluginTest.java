@@ -16,10 +16,13 @@
  *******************************************************************************/
 package org.osc.controller.nsfc;
 
+import static java.util.Collections.singletonList;
 import static org.osc.controller.nsfc.TestData.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,6 +35,11 @@ import org.openstack4j.api.OSClient.OSClientV3;
 import org.openstack4j.api.client.IOSClientBuilder.V3;
 import org.openstack4j.api.networking.NetworkingService;
 import org.openstack4j.api.networking.ext.ServiceFunctionChainService;
+import org.openstack4j.model.network.Port;
+import org.openstack4j.model.network.ext.PortPair;
+import org.openstack4j.model.network.ext.PortPairGroup;
+import org.osc.controller.nsfc.entities.NetworkElementImpl;
+import org.osc.controller.nsfc.entities.ServiceFunctionChainElement;
 
 public abstract class AbstractNeutronSfcPluginTest {
     @Mock
@@ -94,5 +102,58 @@ public abstract class AbstractNeutronSfcPluginTest {
                 .portPairs(new ArrayList<>(Arrays.asList(portPair.getId())))
                 .build();
         portPairGroup = portPairGroupService.create(portPairGroup);
+    }
+
+    protected void persistInspectedPort() {
+        inspectedPort = portService.create(Builders.port().macAddress(inspectedPortElement.getMacAddresses().get(0))
+                .fixedIp(inspectedPortElement.getPortIPs().get(0), "mySubnet").build());
+
+        inspectedPortElement = constructNetworkElementElement(inspectedPort, null);
+    }
+
+    protected ServiceFunctionChainElement persistPortChainAndSfcElement() {
+
+        portChain = Builders.portChain()
+                .portPairGroups(singletonList(portPairGroup.getId()))
+                .flowClassifiers(new ArrayList<>())
+                .build();
+
+        portChain = portChainService.create(portChain);
+
+        ingressPortElement = constructNetworkElementElement(ingressPort, portPair.getId());
+        egressPortElement = constructNetworkElementElement(egressPort, portPair.getId());
+        inspectionPort.setIngressPort(ingressPortElement);
+        inspectionPort.setEgressPort(egressPortElement);
+        ppgElement.getPortPairs().add(inspectionPort);
+        ppgElement.setElementId(portPairGroup.getId());
+
+        sfc = new ServiceFunctionChainElement(portChain.getId());
+        sfc.getPortPairGroups().add(ppgElement);
+        ppgElement.setServiceFunctionChain(sfc);
+
+        return sfc;
+    }
+
+    protected List<PortPairGroup> persistNInspectionPort(int count) {
+        List<PortPairGroup> ppgList = new ArrayList<>();
+        for(int i=0;i<count;i++) {
+            PortPair inspPort_n = Builders.portPair().build();
+            inspPort_n = portPairService.create(inspPort_n);
+            PortPairGroup ppg_n= Builders.portPairGroup()
+                                    .portPairs(singletonList(inspPort_n.getId())).build();
+            ppg_n = portPairGroupService.create(ppg_n);
+            ppgList.add(ppg_n);
+        }
+        return ppgList;
+    }
+
+    private NetworkElementImpl constructNetworkElementElement(Port port, String parentId) {
+        List<String> ips;
+        if (port.getFixedIps() != null) {
+            ips = port.getFixedIps().stream().map(ip -> ip.getIpAddress()).collect(Collectors.toList());
+        } else {
+            ips = new ArrayList<>();
+        }
+        return new NetworkElementImpl(port.getId(), singletonList(port.getMacAddress()), ips, parentId);
     }
 }

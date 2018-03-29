@@ -67,13 +67,14 @@ class TestData {
 
     public static NetworkElementImpl ingressPortElement;
     public static NetworkElementImpl egressPortElement;
-    public static NetworkElementImpl inspected;
+    public static NetworkElementImpl inspectedPortElement;
 
     public static PortChain portChain;
     public static PortPair portPair;
     public static PortPairGroup portPairGroup;
     public static Port ingressPort;
     public static Port egressPort;
+    public static Port inspectedPort;
 
     public static PortService portService;
     public static PortChainService portChainService;
@@ -92,10 +93,10 @@ class TestData {
         egressPortElement.setMacAddresses(asList(EMAC1_STR));
         egressPortElement.setPortIPs(asList(EADDR1_STR));
 
-        inspected = new NetworkElementImpl();
-        inspected.setElementId("iNsPeCtEdPoRt");
-        inspected.setMacAddresses(asList(INSPMAC1_STR));
-        inspected.setPortIPs(asList(INSPADDR_STR));
+        inspectedPortElement = new NetworkElementImpl();
+        inspectedPortElement.setElementId("iNsPeCtEdPoRt");
+        inspectedPortElement.setMacAddresses(asList(INSPMAC1_STR));
+        inspectedPortElement.setPortIPs(asList(INSPADDR_STR));
 
         ppgElement = new PortPairGroupElement();
 
@@ -105,7 +106,7 @@ class TestData {
 
         sfc = new ServiceFunctionChainElement();
 
-        inspectionHook = new FlowClassifierElement(null, inspected, sfc);
+        inspectionHook = new FlowClassifierElement(null, inspectedPortElement, sfc);
 
         portChain = Builders.portChain().build();
         portPair = Builders.portPair().build();
