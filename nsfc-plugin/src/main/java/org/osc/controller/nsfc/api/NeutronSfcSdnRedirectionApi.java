@@ -24,6 +24,7 @@ import static org.osc.controller.nsfc.utils.ArgumentCheckUtil.throwExceptionIfNu
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -57,6 +58,9 @@ import org.slf4j.LoggerFactory;
 public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
 
     private static final Logger LOG = LoggerFactory.getLogger(NeutronSfcSdnRedirectionApi.class);
+    
+    private static final String CHAIN_PARAM_SYMMETRIC_TRAFFIC_FLOW = "symmetric";
+    private static final String SYMMETRIC_CHAIN_ENABLED = "true";
 
     private RedirectionApiUtils utils;
     private OsCalls osCalls;
@@ -230,7 +234,14 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         checkArgument(portChain != null,
                       "Cannot find %s by id: %s!", "Service Function Chain", inspectionPortElement.getElementId());
 
-        FlowClassifier flowClassifier = this.utils.buildFlowClassifier(inspectedPortElement.getElementId());
+        // TODO: logical source port is required for creating flowclassifier due to limitation in Neutron SFC
+        Port defaultGatewayInterfacePort = this.utils.fetchDefaultGatewayPort(inspectedPortElement.getElementId());
+        checkArgument(defaultGatewayInterfacePort != null && defaultGatewayInterfacePort.getId() != null,
+                      "null passed for %s !", "Service Function Chain");
+        
+        String defaultGatewayInterfacePortId = defaultGatewayInterfacePort.getId();
+        FlowClassifier flowClassifier = this.utils.buildFlowClassifier(inspectedPortElement.getElementId(),
+                                                                       defaultGatewayInterfacePortId);
 
         flowClassifier = this.osCalls.createFlowClassifier(flowClassifier);
         portChain.getFlowClassifiers().add(flowClassifier.getId());
@@ -352,7 +363,9 @@ public class NeutronSfcSdnRedirectionApi implements SdnRedirectionApi {
         PortChain portChain = Builders.portChain()
                                     .description("Port Chain object created by OSC")
                                     .name("OSCPortChain-" + UUID.randomUUID().toString().substring(0, 8))
-                                    .chainParameters(emptyMap())
+                                    .chainParameters(new HashMap<String, String>() {{
+                                        put(CHAIN_PARAM_SYMMETRIC_TRAFFIC_FLOW, SYMMETRIC_CHAIN_ENABLED);
+                                     }})
                                     .flowClassifiers(emptyList())
                                     .portPairGroups(portPairGroupIds)
                                     .build();
